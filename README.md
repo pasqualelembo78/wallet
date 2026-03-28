@@ -5,6 +5,12 @@ rm -rf quirc
 git clone https://github.com/dlbeer/quirc.git
 # Monero GUI
 
+docker build --tag mevacoin:build-env-android --build-arg THREADS=4 --file Dockerfile.android .
+
+docker run --rm -it -v /root/gui:/gui -e THREADS=4 mevacoin:build-env-android
+
+
+
 Copyright (c) 2014-2024, The Monero Project
 
 ## Table of Contents
