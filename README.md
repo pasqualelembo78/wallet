@@ -1,3 +1,8 @@
+Installa quirc
+cd /root/gui/external
+rm -rf quirc
+
+git clone https://github.com/dlbeer/quirc.git
 # Monero GUI
 
 Copyright (c) 2014-2024, The Monero Project
