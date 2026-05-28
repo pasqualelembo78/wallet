@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=MevaCoin GUI
+GenericName=MevaCoin-GUI
+Comment=MevaCoin GUI
+Exec=mevacoin-wallet-gui
+Type=Application
+Terminal=false
+Categories=Network;Qt;Finance;Office;
+Icon=org.mevacoin.MevaCoin
+StartupNotify=true

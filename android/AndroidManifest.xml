@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.intelligame.mevacoin_wallet"
+    android:versionCode="1"
+    android:versionName="1.0.0"
+    android:installLocation="auto">
+
+    <!--
+        minSdkVersion 23 (Android 6.0 Marshmallow):
+          - Richiesto da Play Store per nuove app/aggiornamenti dal 2024
+          - Necessario per il sistema di permessi runtime (richiesti all'utente a runtime)
+          - Il vecchio 21 (Android 5.0) non supporta le API moderne di storage
+
+        targetSdkVersion 34 (Android 14):
+          - OBBLIGATORIO da agosto 2024 per nuove app e aggiornamenti su Play Store
+          - Abilita Scoped Storage, permessi granulari media, photo picker, ecc.
+    -->
+    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34"/>
+
+    <!-- Permessi di rete: invariati su tutte le versioni -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <!--
+        === STORAGE: cosa e' cambiato con targetSdk 33/34 ===
+
+        WRITE_EXTERNAL_STORAGE (maxSdkVersion="28"):
+          - Da Android 10 (API 29) in poi il sistema lo ignora completamente.
+          - Rimane solo per dispositivi con API 23-28 (Android 6-9).
+          - Con Scoped Storage (API 29+) ogni app scrive nella propria directory
+            senza bisogno di questo permesso.
+
+        READ_EXTERNAL_STORAGE (maxSdkVersion="32"):
+          - Da Android 13 (API 33) e' stato sostituito dai permessi granulari per tipo.
+          - Rimane per dispositivi con API 23-32 (Android 6-12).
+
+        READ_MEDIA_IMAGES (API 33+):
+          - Nuovo permesso granulare introdotto in Android 13 in sostituzione di
+            READ_EXTERNAL_STORAGE. Permette di leggere solo immagini (es. QR code
+            da galleria, salvataggio seed come immagine).
+          - neverForLocation: impedisce che Android classifichi l'app come
+            raccoglitrice di geolocalizzazione tramite metadati EXIF delle foto.
+
+        READ_MEDIA_VISUAL_USER_SELECTED (API 34+):
+          - Introdotto in Android 14: permette accesso parziale alla galleria tramite
+            il photo picker di sistema. L'utente sceglie quali foto condividere.
+          - Necessario se l'app usa il photo picker per selezionare immagini.
+    -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        android:usesPermissionFlags="neverForLocation"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"/>
+
+    <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
+
+    <!--
+        Modifiche rispetto alla versione precedente:
+
+        RIMOSSO android:usesCleartextTraffic="true":
+          - Con targetSdk 28+ il default e' gia' false (solo HTTPS consentito).
+          - Un wallet di criptovaluta NON deve mai comunicare in HTTP non cifrato.
+          - Il traffico verso localhost (127.0.0.1 / ::1) per il daemon locale e'
+            esentato automaticamente da Android, quindi non serve abilitarlo globalmente.
+
+        RIMOSSO android:requestLegacyExternalStorage="true":
+          - Era un workaround temporaneo per Android 10 (API 29).
+          - Con targetSdk 34 viene completamente ignorato dal sistema.
+          - Lo storage deve essere gestito con le API Scoped Storage moderne.
+    -->
+    <application
+        android:name="org.qtproject.qt5.android.bindings.QtApplication"
+        android:hardwareAccelerated="true"
+        android:label="MevaCoin Wallet"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:allowBackup="false"
+        android:extractNativeLibs="true">
+
+        <activity
+            android:name="org.qtproject.qt5.android.bindings.QtActivity"
+            android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation"
+            android:label="MevaCoin Wallet"
+            android:screenOrientation="unspecified"
+            android:launchMode="singleTop"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!-- Nome della libreria nativa: androiddeployqt sostituisce il placeholder -->
+            <meta-data android:name="android.app.lib_name"
+                       android:value="-- %%INSERT_APP_LIB_NAME%% --"/>
+            <meta-data android:name="android.app.extract_android_style"
+                       android:value="minimal"/>
+
+            <!-- ============================================================
+                 SEZIONE CRITICA Qt5 - DEPLOYMENT BUNDLED
+                 Senza queste righe Qt5 usa Ministro invece delle librerie
+                 incluse nell'APK, mostrando il messaggio "Ministro Service".
+
+                 use_local_qt_libs    = 1  non usare Ministro, usa le .so locali
+                 bundle_local_qt_libs = 1  le .so sono nell'APK (non in /data/local/tmp)
+                 ============================================================ -->
+            <meta-data android:name="android.app.use_local_qt_libs"
+                       android:value="1"/>
+            <meta-data android:name="android.app.bundle_local_qt_libs"
+                       android:value="1"/>
+
+            <!-- Array resources popolati da androiddeployqt -->
+            <meta-data android:name="android.app.bundled_libs_resource_id"
+                       android:resource="@array/bundled_libs"/>
+            <meta-data android:name="android.app.bundled_in_lib_resource_id"
+                       android:resource="@array/bundled_in_lib"/>
+            <meta-data android:name="android.app.bundled_in_assets_resource_id"
+                       android:resource="@array/bundled_in_assets"/>
+            <meta-data android:name="android.app.qt_libs_resource_id"
+                       android:resource="@array/qt_libs"/>
+
+            <!-- Libs e JAR da caricare: androiddeployqt sostituisce i placeholder -->
+            <meta-data android:name="android.app.load_local_libs"
+                       android:value="-- %%INSERT_LOCAL_LIBS%% --"/>
+            <meta-data android:name="android.app.load_local_jars"
+                       android:value="-- %%INSERT_LOCAL_JARS%% --"/>
+            <meta-data android:name="android.app.static_init_classes"
+                       android:value="-- %%INSERT_INIT_CLASSES%% --"/>
+
+        </activity>
+    </application>
+
+</manifest>

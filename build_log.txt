@@ -1,0 +1,1150 @@
+============================================
+  MevaCoin Wallet GUI - Android Build
+  Threads: 4
+============================================
+
+>>> Step 1: Patch sorgenti...
+=== Applicazione patch per mevacoin-wallet-gui (NDK r26d) ===
+
+[0/7] Verifica cartella mevacoin
+  -> Cartella mevacoin presente
+[1/7] Fix span.h: is_standard_layout_v → ::value
+[2/7] Fix span.h + string_tools.h: rimuovi has_unique_object_representations
+[3/7] Fix wallet2_api.h: std::optional → boost::optional
+[4/7] Fix keyvalue_serialization_overloads.h: const_cast per data()
+[5/7] Fix syncobj.h: boost::unique_lock CTAD
+[6/7] Fix randomx ARM64 branch trampoline
+  -> Gia patchato o pattern non trovato
+
+=== Patch GUI: branding gia applicato dal rebranding script ===
+  (nessuna patch GUI necessaria)
+
+✅ Tutte le patch applicate con successo!
+
+>>> Keystore OK
+
+>>> Step 1.6: Patch main.qml (drawer banner)...
+  INFO: Pattern non trovato - gia patchato o diverso indentation
+
+>>> Step 2: Build immagine Docker...
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.android
+#1 transferring dockerfile: 17.24kB done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ubuntu:20.04
+#2 DONE 0.5s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 121B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 100B done
+#4 DONE 0.0s
+
+#5 [ 1/21] FROM docker.io/library/ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214
+#5 resolve docker.io/library/ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214 0.0s done
+#5 DONE 0.0s
+
+#6 [18/21] RUN set -ex &&     cd /tmp &&     git clone https://github.com/pasqualelembo78/Boost-for-Android.git boost-android &&     cd boost-android &&     chmod +x build-android.sh &&     NCPU=4 ./build-android.sh /opt/android/android-ndk-r26d         --arch=arm64-v8a         --with-libraries=system,thread,filesystem,date_time,chrono,regex,serialization,program_options,locale || true &&     cp -r build/out/arm64-v8a/include/boost-1_85/boost /opt/android/prefix/include/ &&     cp build/out/arm64-v8a/lib/*.a /opt/android/prefix/lib/
+#6 CACHED
+
+#7 [ 7/21] RUN wget -q https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz     && echo "9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23  zlib-1.3.1.tar.gz" | sha256sum -c     && tar -xzf zlib-1.3.1.tar.gz     && rm zlib-1.3.1.tar.gz     && cd zlib-1.3.1     && CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ CFLAGS="-fPIC" ./configure --prefix=/opt/android/prefix --static     && make -j4     && make -j4 install     && rm -rf $(pwd)
+#7 CACHED
+
+#8 [19/21] RUN for lib in /opt/android/prefix/lib/libboost_*-clang-mt-a64-1_85.a; do         newname=$(echo $(basename "$lib") | sed 's/-clang-mt-a64-1_85//');         ln -sf "$lib" "/opt/android/prefix/lib/$newname";     done
+#8 CACHED
+
+#9 [15/21] RUN git clone -b libgpg-error-1.41 --depth 1 https://github.com/gpg/libgpg-error.git     && cd libgpg-error     && git reset --hard 98032624ae89a67ee6fe3b1db5d95032e681d163     && ./autogen.sh     && CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ ./configure         --host=aarch64-linux-android --prefix=/opt/android/prefix         --disable-rpath --disable-shared --enable-static         --disable-doc --disable-tests     && PATH=/opt/android/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make -j4     && make -j4 install     && rm -rf $(pwd)
+#9 CACHED
+
+#10 [13/21] RUN git clone https://github.com/zeromq/libzmq.git -b v4.3.5 --depth 1     && cd libzmq     && git checkout 622fc6dde99ee172ebaa9c8628d85a7a1995a21d     && ./autogen.sh     && CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ ./configure         --prefix=/opt/android/prefix --host=aarch64-linux-android         --enable-static --disable-shared     && make -j4     && make -j4 install     && rm -rf $(pwd)
+#10 CACHED
+
+#11 [ 3/21] RUN apt-get update     && apt-get install -y ant automake build-essential ca-certificates-java        file gettext git libc6 libncurses5 libssl-dev libstdc++6 libtinfo5        libtool libz1 openjdk-11-jdk-headless openjdk-11-jre-headless        pkg-config python3 unzip wget bzip2 curl
+#11 CACHED
+
+#12 [ 8/21] RUN git clone https://code.qt.io/qt/qt5.git -b v5.15.18-lts-lgpl --depth 1     && cd qt5     && perl init-repository --module-subset=default,-qtwebengine     && PATH=/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ./configure -v -release         -xplatform android-clang         -android-ndk-platform android-31         -android-ndk /opt/android/android-ndk-r26d         -android-sdk /opt/android/sdk         -android-ndk-host linux-x86_64         -no-dbus         -opengl es2         -no-use-gold-linker         -no-sql-mysql         -opensource -confirm-license         -android-arch arm64-v8a         -prefix /opt/android/prefix         -nomake tools -nomake tests -nomake examples         -skip qtwebengine         -skip qtserialport         -skip qtconnectivity         -skip qttranslations         -skip qtpurchasing         -skip qtgamepad -skip qtscript -skip qtdoc -skip qtlocation         -no-warnings-are-errors     && PATH=/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make -j4     && PATH=/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make -j4 install     && cd qttools/src/linguist/lrelease     && ../../../../qtbase/bin/qmake     && PATH=/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make -j4 install     && cd ../../../..     && rm -rf $(pwd)
+#12 CACHED
+
+#13 [10/21] RUN wget -q https://www.openssl.org/source/openssl-1.1.1w.tar.gz     && echo "cf3098950cb4d853ad95c0841f1f9c6d3dc102dccfcacd521d93925208b76ac8  openssl-1.1.1w.tar.gz" | sha256sum -c     && tar -xzf openssl-1.1.1w.tar.gz     && rm openssl-1.1.1w.tar.gz     && cd openssl-1.1.1w     && ANDROID_NDK_HOME=/opt/android/android-ndk-r26d ./Configure         CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++         android-arm64 no-shared --static         --with-zlib-include=/opt/android/prefix/include --with-zlib-lib=/opt/android/prefix/lib         --prefix=/opt/android/prefix --openssldir=/opt/android/prefix     && sed -i 's/CNF_EX_LIBS=-ldl -pthread//g;s/BIN_CFLAGS=-pie $(CNF_CFLAGS) $(CFLAGS)//g' Makefile     && ANDROID_NDK_HOME=/opt/android/android-ndk-r26d make -j4     && make -j4 install     && rm -rf $(pwd)
+#13 CACHED
+
+#14 [11/21] RUN wget -q "https://github.com/libexpat/libexpat/releases/download/R_2_6_4/expat-2.6.4.tar.bz2"         -O /tmp/expat.tar.bz2 &&     echo "8dc480b796163d4436e6f1352e71800a774f73dbae213f1860b60607d2a83ada  /tmp/expat.tar.bz2" | sha256sum -c - &&     tar -xjf /tmp/expat.tar.bz2 -C /tmp && rm /tmp/expat.tar.bz2 &&     cd /tmp/expat-2.6.4 &&     CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ ./configure         --enable-static --disable-shared --prefix=/opt/android/prefix         --host=aarch64-linux-android &&     make -j4 && make install && cd / && rm -rf /tmp/expat-2.6.4
+#14 CACHED
+
+#15 [20/21] RUN printf 'import json, sys\nf = sys.argv[1]\nwith open(f) as h:\n    d = json.load(h)\nd["android-package-source-directory"] = sys.argv[2]\nwith open(f, "w") as h:\n    json.dump(d, h, indent=2)\nprint("OK: android-package-source-directory =", d["android-package-source-directory"])\n'     > /usr/local/bin/patch_deploy_json.py
+#15 CACHED
+
+#16 [ 6/21] RUN echo y | /opt/android/sdk/cmdline-tools/latest/bin/sdkmanager     --sdk_root=/opt/android/sdk     "build-tools;30.0.2" "platforms;android-31" > /dev/null
+#16 CACHED
+
+#17 [ 5/21] RUN PACKAGE_NAME=android-ndk-r26d-linux.zip     && wget -q https://dl.google.com/android/repository/${PACKAGE_NAME}     && unzip -q ${PACKAGE_NAME}     && rm -f ${PACKAGE_NAME}
+#17 CACHED
+
+#18 [ 9/21] RUN wget -q http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz     && echo "e6a1b1b589654277ee790cce3734f07876ac4ccfaecbee8afa0b649cf529cc04  libiconv-1.16.tar.gz" | sha256sum -c     && tar -xzf libiconv-1.16.tar.gz     && rm -f libiconv-1.16.tar.gz     && cd libiconv-1.16     && CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ ./configure         --build=x86_64-linux-gnu --host=aarch64 --prefix=/opt/android/prefix --disable-rpath     && make -j4     && make -j4 install     && rm -rf $(pwd)
+#18 CACHED
+
+#19 [14/21] RUN set -ex     && git clone https://github.com/jedisct1/libsodium.git -b 1.0.20-RELEASE --depth 1     && cd libsodium     && test `git rev-parse HEAD` = 9511c982fb1d046470a8b42aa36556cdb7da15de || exit 1     && ./autogen.sh     && CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ ./configure         --prefix=/opt/android/prefix --host=aarch64-linux-android         --enable-static --disable-shared     && make -j4 install     && rm -rf $(pwd)
+#19 CACHED
+
+#20 [12/21] RUN wget https://www.nlnetlabs.nl/downloads/unbound/unbound-1.22.0.tar.gz &&     echo "c5dd1bdef5d5685b2cedb749158dd152c52d44f65529a34ac15cd88d4b1b3d43  unbound-1.22.0.tar.gz" | sha256sum -c &&     tar -xzf unbound-1.22.0.tar.gz &&     rm unbound-1.22.0.tar.gz &&     cd unbound-1.22.0 &&     CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ ./configure         --disable-shared --enable-static --without-pyunbound         --with-libexpat=/opt/android/prefix --with-ssl=/opt/android/prefix         --with-libevent=no --without-pythonmodule --disable-flto         --with-pthreads --with-libunbound-only         --host=aarch64-linux-android --with-pic --prefix=/opt/android/prefix &&     make -j4 &&     make -j4 install &&     rm -rf $(pwd)
+#20 CACHED
+
+#21 [16/21] RUN git clone -b libgcrypt-1.10.1 --depth 1 https://github.com/gpg/libgcrypt.git     && cd libgcrypt     && git reset --hard ae0e567820c37f9640440b3cff77d7c185aa6742     && ./autogen.sh     && CC=aarch64-linux-android31-clang CXX=aarch64-linux-android31-clang++ ./configure         --host=aarch64-linux-android --prefix=/opt/android/prefix         --with-gpg-error-prefix=/opt/android/prefix         --disable-shared --enable-static --disable-doc --disable-tests     && PATH=/opt/android/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make -j4     && make -j4 install     && rm -rf $(pwd)
+#21 CACHED
+
+#22 [ 4/21] RUN mkdir -p /opt/android/sdk/cmdline-tools     && PACKAGE_NAME=commandlinetools-linux-7302050_latest.zip     && wget -q https://dl.google.com/android/repository/${PACKAGE_NAME}     && echo "7a00faadc0864f78edd8f4908a629a46d622375cbe2e5814e82934aebecdb622  ${PACKAGE_NAME}" | sha256sum -c     && unzip -q ${PACKAGE_NAME}     && mv cmdline-tools /opt/android/sdk/cmdline-tools/latest     && rm -f ${PACKAGE_NAME}
+#22 CACHED
+
+#23 [ 2/21] WORKDIR /opt/android
+#23 CACHED
+
+#24 [17/21] RUN git clone -b v3.28.6 --depth 1 https://github.com/Kitware/CMake     && cd CMake     && PATH=/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ./bootstrap     && PATH=/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make -j4     && PATH=/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin make -j4 install     && rm -rf $(pwd)
+#24 CACHED
+
+#25 [21/21] COPY --chown=root:root android-keystore/mevacoin-release.keystore      /root/android-keystore/mevacoin-release.keystore
+#25 CACHED
+
+#26 exporting to image
+#26 exporting layers done
+#26 exporting manifest sha256:8d1261e4c2eebfc7a5c69102f8fe676e103f4760c5213177bbd4b86f52daaa05 done
+#26 exporting config sha256:abd7d2cd6405c33e70da972afcfd0e959bb9d7dd2e8f19c6c7a4bf76b0854071 done
+#26 exporting attestation manifest sha256:e479706cd48d2028c9432914d7c172eb600cdbce0d70937c0c25041264712ee5 done
+#26 exporting manifest list sha256:7d38921de1fa33e92dbf233c4f98b7fac2df9535f99bd90e47335a5c26885d94 done
+#26 naming to docker.io/library/mevacoin:build-env-android done
+#26 unpacking to docker.io/library/mevacoin:build-env-android 0.0s done
+#26 DONE 0.1s
+
+ [33m4 warnings found (use docker --debug to expand):
+[0m - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "ANDROID_KEYSTORE_PASSWORD") (line 14)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "ANDROID_KEY_PASSWORD") (line 15)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "ANDROID_KEYSTORE_PASSWORD") (line 275)
+ - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "ANDROID_KEY_PASSWORD") (line 276)
+
+>>> Step 3: Build + firma APK...
++ export PATH=/opt/android/android-ndk-r26d/toolchains/llvm/prebuilt/linux-x86_64/bin:/usr/lib/jvm/java-11-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/android/sdk/build-tools/30.0.2
++ cd /tmp
++ wget -q https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
++ tar -xzf zlib-1.3.1.tar.gz
++ cd zlib-1.3.1
++ CC=aarch64-linux-android31-clang CFLAGS=-fPIC ./configure --prefix=/opt/android/prefix --static
+Building static library libz.a version 1.3.1 with aarch64-linux-android31-clang.
+Checking for size_t... Yes.
+Checking for off64_t... Yes.
+Checking for fseeko... Yes.
+Checking for strerror... Yes.
+Checking for unistd.h... Yes.
+Checking for stdarg.h... Yes.
+Checking whether to use vs[n]printf() or s[n]printf()... using vs[n]printf().
+Checking for vsnprintf() in stdio.h... Yes.
+Checking for return value of vsnprintf()... Yes.
+Checking for attribute(visibility) support... Yes.
++ make -j4
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -I. -c -o example.o test/example.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o adler32.o adler32.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o crc32.o crc32.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o deflate.o deflate.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o infback.o infback.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o inffast.o inffast.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o inflate.o inflate.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o inftrees.o inftrees.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o trees.o trees.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o zutil.o zutil.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o compress.o compress.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o uncompr.o uncompr.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o gzclose.o gzclose.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o gzlib.o gzlib.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o gzread.o gzread.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -c -o gzwrite.o gzwrite.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -I. -c -o minigzip.o test/minigzip.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -I. -D_FILE_OFFSET_BITS=64 -c -o example64.o test/example.c
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN -I. -D_FILE_OFFSET_BITS=64 -c -o minigzip64.o test/minigzip.c
+ar rc libz.a adler32.o crc32.o deflate.o infback.o inffast.o inflate.o inftrees.o trees.o zutil.o compress.o uncompr.o gzclose.o gzlib.o gzread.o gzwrite.o 
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -o example example.o -L. libz.a
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -o minigzip minigzip.o -L. libz.a
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -o example64 example64.o -L. libz.a
+aarch64-linux-android31-clang -fPIC -D_LARGEFILE64_SOURCE=1 -DHAVE_HIDDEN  -o minigzip64 minigzip64.o -L. libz.a
++ make -j4 install
+rm -f /opt/android/prefix/lib/libz.a
+cp libz.a /opt/android/prefix/lib
+chmod 644 /opt/android/prefix/lib/libz.a
+rm -f /opt/android/prefix/share/man/man3/zlib.3
+cp zlib.3 /opt/android/prefix/share/man/man3
+chmod 644 /opt/android/prefix/share/man/man3/zlib.3
+rm -f /opt/android/prefix/lib/pkgconfig/zlib.pc
+cp zlib.pc /opt/android/prefix/lib/pkgconfig
+chmod 644 /opt/android/prefix/lib/pkgconfig/zlib.pc
+rm -f /opt/android/prefix/include/zlib.h /opt/android/prefix/include/zconf.h
+cp zlib.h zconf.h /opt/android/prefix/include
+chmod 644 /opt/android/prefix/include/zlib.h /opt/android/prefix/include/zconf.h
++ cd /mevacoin-gui
++ mkdir -p build/Android/release
++ cd build/Android/release
++ cmake -DCMAKE_TOOLCHAIN_FILE=/opt/android/android-ndk-r26d/build/cmake/android.toolchain.cmake -DMANUAL_SUBMODULES=ON -DCMAKE_PREFIX_PATH=/opt/android/prefix -DCMAKE_FIND_ROOT_PATH=/opt/android/prefix -DCMAKE_BUILD_TYPE=Release -DARCH=armv8-a -DANDROID_NATIVE_API_LEVEL=31 -DANDROID_ABI=arm64-v8a -DANDROID_TOOLCHAIN=clang -DANDROID_STL=c++_shared -DBoost_USE_STATIC_LIBS=ON -DBoost_USE_STATIC_RUNTIME=ON -DBOOST_ROOT=/opt/android/prefix -DBOOST_INCLUDEDIR=/opt/android/prefix/include -DBOOST_LIBRARYDIR=/opt/android/prefix/lib -DBoost_NO_SYSTEM_PATHS=ON -DCMAKE_POLICY_DEFAULT_CMP0074=NEW -DBoost_COMPILER=-clang -DLRELEASE_PATH=/opt/android/prefix/bin -DQT_ANDROID_APPLICATION_BINARY=mevacoin-wallet-gui -DANDROID_SDK=/opt/android/sdk -DWITH_SCANNER=ON -DWITH_DESKTOP_ENTRY=OFF -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF ../../..
+-- Initiating compile using CMake 3.28.6
+-- CMake version 3.28.6
+-- ccache NOT found! Please install it for faster rebuilds.
+-- Building without build tag
+-- Building for a 64-bit system
+-- Building internal libraries as static
+-- Using LMDB as default DB type
+-- Stack trace on exception disabled
+-- Using OpenSSL include dir at /opt/android/prefix/include
+-- Could NOT find HIDAPI (missing: HIDAPI_LIBRARY HIDAPI_INCLUDE_DIR) 
+CMake Warning (dev) at /usr/local/share/cmake-3.28/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (MiniUPnPc)
+  does not match the name of the calling package (Miniupnpc).  This can lead
+  to problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  mevacoin/cmake/FindMiniupnpc.cmake:39 (find_package_handle_standard_args)
+  mevacoin/external/CMakeLists.txt:38 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Could NOT find MiniUPnPc (missing: MINIUPNP_INCLUDE_DIR MINIUPNP_LIBRARY) 
+-- Using in-tree miniupnpc
+-- Looking for libunbound
+-- Found libunbound include (unbound.h) in /opt/android/prefix/include
+-- Found libunbound library
+-- Using 64-bit LMDB from source tree
+-- Backtrace_LIBRARY: Backtrace_LIBRARY-NOTFOUND
+-- Could NOT find Backtrace (missing: Backtrace_LIBRARY) 
+-- Performing Test _march=armv8_a+crypto_cxx
+-- Performing Test _march=armv8_a+crypto_cxx - Success
+-- Setting CXX flag -march=armv8-a+crypto
+-- Performing Test _march=armv8_a+crypto_c
+-- Performing Test _march=armv8_a+crypto_c - Success
+-- Setting C flag -march=armv8-a+crypto
+-- Could not find HIDAPI
+-- Could NOT find Protobuf (missing: Protobuf_DIR)
+-- Could NOT find Protobuf (missing: Protobuf_LIBRARIES Protobuf_INCLUDE_DIR) 
+CMake Warning at mevacoin/cmake/CheckTrezor.cmake:37 (message):
+  Trezor: protobuf library not found
+
+  ==========================================================================
+
+  [WARNING] Trezor support cannot be compiled! Skipping Trezor compilation.
+
+  For more information, please check src/device_trezor/README.md
+
+Call Stack (most recent call first):
+  mevacoin/cmake/CheckTrezor.cmake:63 (trezor_fatal_msg)
+  mevacoin/CMakeLists.txt:675 (include)
+
+
+-- Building on aarch64 for armv8-a
+-- Crypto extensions enabled for ARMv8
+-- Performing Test _Werror__fcf_protection=full_c
+-- Performing Test _Werror__fcf_protection=full_c - Failed
+-- Performing Test _Werror__fcf_protection=full_cxx
+-- Performing Test _Werror__fcf_protection=full_cxx - Failed
+-- Performing Test _Werror__Werror=switch_c
+-- Performing Test _Werror__Werror=switch_c - Success
+-- Performing Test _Werror__Werror=switch_cxx
+-- Performing Test _Werror__Werror=switch_cxx - Success
+-- Performing Test _Werror__Werror=return_type_c
+-- Performing Test _Werror__Werror=return_type_c - Success
+-- Performing Test _Werror__Werror=return_type_cxx
+-- Performing Test _Werror__Werror=return_type_cxx - Success
+-- Using C security hardening flags:  -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -Wformat -Wformat-security -fstack-protector -fstack-protector-strong -Werror=switch -Werror=return-type
+-- Using C++ security hardening flags:  -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -Wformat -Wformat-security -fstack-protector -fstack-protector-strong -Werror=switch -Werror=return-type
+-- Using linker security hardening flags:  -Wl,-pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack
+-- Setting FPU Flags for ARM Processors
+-- Enabling Cortex-A53 workaround 835769
+CMake Warning (dev) at mevacoin/CMakeLists.txt:1027 (find_package):
+  Policy CMP0144 is not set: find_package uses upper-case <PACKAGENAME>_ROOT
+  variables.  Run "cmake --help-policy CMP0144" for policy details.  Use the
+  cmake_policy command to set the policy and suppress this warning.
+
+  CMake variable BOOST_ROOT is set to:
+
+    /opt/android/prefix
+
+  For compatibility, find_package is ignoring the variable, but code in a
+  .cmake module might still use it.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found Boost Version: 1.85.0
+-- Boost components: filesystem;thread;date_time;chrono;serialization;program_options
+CMake Warning at /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1398 (message):
+  New Boost version may have incorrect or missing dependencies and imported
+  targets
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1523 (_Boost_COMPONENT_DEPENDENCIES)
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:2135 (_Boost_MISSING_DEPENDENCIES)
+  mevacoin/CMakeLists.txt:1052 (find_package)
+
+
+CMake Warning at /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1398 (message):
+  New Boost version may have incorrect or missing dependencies and imported
+  targets
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1523 (_Boost_COMPONENT_DEPENDENCIES)
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:2135 (_Boost_MISSING_DEPENDENCIES)
+  mevacoin/CMakeLists.txt:1052 (find_package)
+
+
+CMake Warning at /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1398 (message):
+  New Boost version may have incorrect or missing dependencies and imported
+  targets
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1523 (_Boost_COMPONENT_DEPENDENCIES)
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:2135 (_Boost_MISSING_DEPENDENCIES)
+  mevacoin/CMakeLists.txt:1052 (find_package)
+
+
+CMake Warning at /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1398 (message):
+  New Boost version may have incorrect or missing dependencies and imported
+  targets
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1523 (_Boost_COMPONENT_DEPENDENCIES)
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:2135 (_Boost_MISSING_DEPENDENCIES)
+  mevacoin/CMakeLists.txt:1052 (find_package)
+
+
+CMake Warning at /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1398 (message):
+  New Boost version may have incorrect or missing dependencies and imported
+  targets
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1523 (_Boost_COMPONENT_DEPENDENCIES)
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:2135 (_Boost_MISSING_DEPENDENCIES)
+  mevacoin/CMakeLists.txt:1052 (find_package)
+
+
+CMake Warning at /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1398 (message):
+  New Boost version may have incorrect or missing dependencies and imported
+  targets
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1523 (_Boost_COMPONENT_DEPENDENCIES)
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:2135 (_Boost_MISSING_DEPENDENCIES)
+  mevacoin/CMakeLists.txt:1052 (find_package)
+
+
+CMake Warning at /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1398 (message):
+  New Boost version may have incorrect or missing dependencies and imported
+  targets
+Call Stack (most recent call first):
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:1523 (_Boost_COMPONENT_DEPENDENCIES)
+  /usr/local/share/cmake-3.28/Modules/FindBoost.cmake:2135 (_Boost_MISSING_DEPENDENCIES)
+  mevacoin/CMakeLists.txt:1052 (find_package)
+
+
+-- Could NOT find Readline (missing: Readline_INCLUDE_DIR Readline_LIBRARY) 
+-- Could not find GNU readline library so building without readline support
+-- Found Git: /usr/bin/git
+-- You are currently on commit e1fe50bde
+-- You are ahead of or behind a tagged release
+-- Trezor: support disabled
+-- Not building tests
+-- Not building debug utilities
+Doxygen: graphviz not found - graphs disabled
+-- Could NOT find Doxygen (missing: DOXYGEN_EXECUTABLE) 
+-- Found Git: /usr/bin/git
+-- You are currently on commit 9718416df
+-- You are ahead of or behind a tagged release
+-- /mevacoin-gui/cmake
+-- libsodium: libraries at /opt/android/prefix/lib/libsodium.a
+-- Using C security hardening flags:  -Wformat -Wformat-security -fstack-protector -fstack-protector-strong -fno-strict-aliasing -fPIC
+-- Using C++ security hardening flags:  -Wformat -Wformat-security -fstack-protector -fstack-protector-strong -fno-strict-aliasing -fPIC
+-- Using linker security hardening flags:  -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack
+-- OpenGL: include dir at 
+-- OpenGL: libraries at 
+-- Configuring done (1.7s)
+-- Generating done (0.4s)
+-- Build files have been written to: /mevacoin-gui/build/Android/release
++ make generate_translations_header
+[  0%] Creating directories for 'generate_translations_header'
+[  0%] No download step for 'generate_translations_header'
+[ 50%] No update step for 'generate_translations_header'
+[ 50%] No patch step for 'generate_translations_header'
+[ 50%] Performing configure step for 'generate_translations_header'
+lrelease version 5.15.18
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /mevacoin-gui/build/Android/release/mevacoin/translations
+[100%] Performing build step for 'generate_translations_header'
+[100%] Built target generate_translations_header
+[100%] Performing install step for 'generate_translations_header'
+
+[100%] Completed 'generate_translations_header'
+[100%] Built target generate_translations_header
++ make -j4 -C src
+make: Entering directory '/mevacoin-gui/build/Android/release/src'
+make[1]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[  0%] Built target zxcvbn_autogen_timestamp_deps
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[  0%] Built target easylogging
+[  0%] Built target qrcodegen
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[  2%] Built target generate_translations_header
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[  2%] Building CXX object mevacoin/src/crypto/CMakeFiles/obj_cncrypto.dir/crypto.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[  2%] Building C object mevacoin/external/randomx/CMakeFiles/randomx.dir/src/jit_compiler_a64_static.S.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[  2%] Linking CXX static library librandomx.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 10%] Built target randomx
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 12%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/dandelionpp.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 12%] Building CXX object mevacoin/src/device_trezor/CMakeFiles/obj_device_trezor.dir/device_trezor.cpp.o
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 13%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/byte_slice.cpp.o
+[ 13%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/byte_stream.cpp.o
+[ 13%] Building CXX object mevacoin/src/crypto/CMakeFiles/obj_cncrypto.dir/generators.cpp.o
+[ 13%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/hex.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 13%] Built target obj_device_trezor
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 15%] Built target lmdb
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 15%] Built target genversion
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 15%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/http.cpp.o
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 15%] Building CXX object mevacoin/src/ringct/CMakeFiles/obj_ringct_basic.dir/rctOps.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 20%] Built target obj_cncrypto
+[ 20%] Building CXX object mevacoin/src/ringct/CMakeFiles/obj_ringct_basic.dir/rctTypes.cpp.o
+[ 20%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/http_auth.cpp.o
+[ 21%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/mlog.cpp.o
+[ 21%] Building CXX object mevacoin/src/ringct/CMakeFiles/obj_ringct_basic.dir/multiexp.cc.o
+[ 21%] Building CXX object mevacoin/src/ringct/CMakeFiles/obj_ringct_basic.dir/bulletproofs.cc.o
+[ 21%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/net_helper.cpp.o
+[ 21%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/net_utils_base.cpp.o
+[ 21%] Building CXX object mevacoin/src/ringct/CMakeFiles/obj_ringct_basic.dir/bulletproofs_plus.cc.o
+[ 21%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/string_tools.cpp.o
+[ 21%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/levin_base.cpp.o
+[ 21%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/connection_basic.cpp.o
+[ 21%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/network_throttle.cpp.o
+[ 21%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/i2p_address.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 23%] Built target obj_ringct_basic
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 23%] Building CXX object mevacoin/src/device/CMakeFiles/obj_device.dir/device.cpp.o
+[ 23%] Building CXX object mevacoin/src/device/CMakeFiles/obj_device.dir/device_default.cpp.o
+[ 24%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/network_throttle-detail.cpp.o
+[ 24%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/mlocker.cpp.o
+[ 24%] Building CXX object mevacoin/src/device/CMakeFiles/obj_device.dir/log.cpp.o
+[ 24%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/buffer.cpp.o
+[ 24%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/net_ssl.cpp.o
+[ 24%] Building CXX object mevacoin/contrib/epee/src/CMakeFiles/obj_epee.dir/portable_storage.cpp.o
+[ 24%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/parse.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 24%] Built target obj_device
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 24%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_format_utils_basic.dir/cryptonote_format_utils_basic.cpp.o
+[ 24%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/socks.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 24%] Built target obj_cryptonote_format_utils_basic
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 24%] Building CXX object mevacoin/src/ringct/CMakeFiles/obj_ringct.dir/rctSigs.cpp.o
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 24%] Building CXX object mevacoin/src/checkpoints/CMakeFiles/obj_checkpoints.dir/checkpoints.cpp.o
+[ 24%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/socks_connect.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 27%] Built target obj_epee
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 27%] Built target obj_ringct
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 27%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/account.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 27%] Building CXX object mevacoin/src/cryptonote_core/CMakeFiles/obj_cryptonote_core.dir/blockchain.cpp.o
+[ 27%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/tor_address.cpp.o
+[ 27%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/connection_context.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 27%] Built target obj_checkpoints
+[ 28%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/cryptonote_basic_impl.cpp.o
+/mevacoin-gui/mevacoin/src/cryptonote_core/blockchain.cpp:5095:24: warning: variable 'block_index' set but not used [-Wunused-but-set-variable]
+  size_t tx_index = 0, block_index = 0;
+                       ^
+[ 28%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/cryptonote_format_utils.cpp.o
+[ 28%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/difficulty.cpp.o
+[ 28%] Building CXX object mevacoin/src/net/CMakeFiles/obj_net.dir/zmq.cpp.o
+[ 28%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/hardfork.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 30%] Built target obj_net
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 30%] Built target obj_hardforks
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 30%] Building CXX object mevacoin/src/blockchain_db/CMakeFiles/obj_blockchain_db.dir/blockchain_db.cpp.o
+In file included from /mevacoin-gui/mevacoin/src/blockchain_db/blockchain_db.cpp:37:
+/mevacoin-gui/mevacoin/src/blockchain_db/lmdb/db_lmdb.h:340:8: warning: 'can_thread_bulk_indices' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+  bool can_thread_bulk_indices() const { return true; }
+       ^
+/mevacoin-gui/mevacoin/src/blockchain_db/blockchain_db.h:1484:16: note: overridden virtual function is here
+  virtual bool can_thread_bulk_indices() const = 0;
+               ^
+[ 30%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/merge_mining.cpp.o
+1 warning generated.
+[ 30%] Building CXX object mevacoin/src/blockchain_db/CMakeFiles/obj_blockchain_db.dir/lmdb/db_lmdb.cpp.o
+[ 31%] Building CXX object mevacoin/src/cryptonote_basic/CMakeFiles/obj_cryptonote_basic.dir/miner.cpp.o
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 31%] Building CXX object mevacoin/src/multisig/CMakeFiles/obj_multisig.dir/multisig.cpp.o
+In file included from /mevacoin-gui/mevacoin/src/blockchain_db/lmdb/db_lmdb.cpp:28:
+/mevacoin-gui/mevacoin/src/blockchain_db/lmdb/db_lmdb.h:340:8: warning: 'can_thread_bulk_indices' overrides a member function but is not marked 'override' [-Winconsistent-missing-override]
+  bool can_thread_bulk_indices() const { return true; }
+       ^
+/mevacoin-gui/mevacoin/src/blockchain_db/blockchain_db.h:1484:16: note: overridden virtual function is here
+  virtual bool can_thread_bulk_indices() const = 0;
+               ^
+[ 32%] Building CXX object mevacoin/src/multisig/CMakeFiles/obj_multisig.dir/multisig_account.cpp.o
+1 warning generated.
+[ 32%] Building CXX object mevacoin/src/cryptonote_core/CMakeFiles/obj_cryptonote_core.dir/cryptonote_core.cpp.o
+[ 32%] Building CXX object mevacoin/src/multisig/CMakeFiles/obj_multisig.dir/multisig_account_kex_impl.cpp.o
+[ 32%] Building CXX object mevacoin/src/multisig/CMakeFiles/obj_multisig.dir/multisig_clsag_context.cpp.o
+[ 32%] Building CXX object mevacoin/src/multisig/CMakeFiles/obj_multisig.dir/multisig_kex_msg.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 32%] Built target obj_cryptonote_basic
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 32%] Building CXX object mevacoin/src/mnemonics/CMakeFiles/obj_mnemonics.dir/electrum-words.cpp.o
+1 warning generated.
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 32%] Built target obj_blockchain_db
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 32%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc_base.dir/rpc_args.cpp.o
+[ 32%] Building CXX object mevacoin/src/multisig/CMakeFiles/obj_multisig.dir/multisig_tx_builder_ringct.cpp.o
+[ 32%] Building CXX object mevacoin/src/cryptonote_core/CMakeFiles/obj_cryptonote_core.dir/tx_pool.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 32%] Built target obj_mnemonics
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 32%] Building CXX object mevacoin/src/wallet/CMakeFiles/obj_wallet.dir/wallet2.cpp.o
+[ 34%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc_base.dir/rpc_payment_signature.cpp.o
+[ 34%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc_base.dir/rpc_handler.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 34%] Built target obj_multisig
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 34%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/wallet.cpp.o
+/mevacoin-gui/mevacoin/src/wallet/wallet2.cpp:4098:8: warning: unused variable 'refreshed' [-Wunused-variable]
+  bool refreshed = false;
+       ^
+/mevacoin-gui/mevacoin/src/wallet/wallet2.cpp:9731:10: warning: variable 'i' set but not used [-Wunused-but-set-variable]
+  size_t i = 0, out_index = 0;
+         ^
+/mevacoin-gui/mevacoin/src/wallet/wallet2.cpp:9951:10: warning: variable 'i' set but not used [-Wunused-but-set-variable]
+  size_t i = 0, out_index = 0;
+         ^
+/mevacoin-gui/mevacoin/src/wallet/wallet2.cpp:12688:8: warning: variable 'loaded' set but not used [-Wunused-but-set-variable]
+  bool loaded = false;
+       ^
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 34%] Built target obj_rpc_base
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 34%] Built target translations_autogen_timestamp_deps
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 35%] Built target quirc
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 35%] Built target openpgp_autogen_timestamp_deps
+[ 35%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/wallet_manager.cpp.o
+[ 35%] Building CXX object mevacoin/src/cryptonote_core/CMakeFiles/obj_cryptonote_core.dir/tx_sanity_check.cpp.o
+[ 35%] Building CXX object mevacoin/src/cryptonote_core/CMakeFiles/obj_cryptonote_core.dir/cryptonote_tx_utils.cpp.o
+[ 35%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/transaction_info.cpp.o
+[ 36%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/transaction_history.cpp.o
+[ 38%] Building CXX object mevacoin/src/cryptonote_core/CMakeFiles/obj_cryptonote_core.dir/tx_verification_utils.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 38%] Built target obj_cryptonote_core
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 42%] Built target libminiupnpc-static
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 42%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/pending_transaction.cpp.o
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 42%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc.dir/bootstrap_daemon.cpp.o
+[ 42%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/utils.cpp.o
+[ 42%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/address_book.cpp.o
+[ 42%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/subaddress.cpp.o
+[ 43%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/subaddress_account.cpp.o
+[ 45%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc.dir/bootstrap_node_selector.cpp.o
+[ 45%] Building CXX object mevacoin/src/wallet/api/CMakeFiles/obj_wallet_api.dir/unsigned_transaction.cpp.o
+[ 45%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc.dir/core_rpc_server.cpp.o
+[ 45%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc.dir/rpc_payment.cpp.o
+/mevacoin-gui/mevacoin/src/rpc/core_rpc_server.cpp:1266:16: warning: unused variable 'request_has_rpc_origin' [-Wunused-variable]
+    const bool request_has_rpc_origin = ctx != NULL;
+               ^
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 45%] Built target obj_wallet_api
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 46%] Building CXX object mevacoin/src/p2p/CMakeFiles/obj_p2p.dir/net_node.cpp.o
+[ 46%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc.dir/instanciations.cpp.o
+[ 46%] Building CXX object mevacoin/src/p2p/CMakeFiles/obj_p2p.dir/net_peerlist.cpp.o
+In file included from /mevacoin-gui/mevacoin/src/rpc/instanciations.cpp:32:
+/mevacoin-gui/mevacoin/src/p2p/net_node.inl:2140:24: warning: variable 'bad' set but not used [-Wunused-but-set-variable]
+    unsigned good = 0, bad = 0;
+                       ^
+In file included from /mevacoin-gui/mevacoin/src/rpc/instanciations.cpp:34:
+/mevacoin-gui/mevacoin/src/cryptonote_protocol/cryptonote_protocol_handler.inl:2676:33: warning: lambda capture 'this' is not used [-Wunused-lambda-capture]
+    m_p2p->for_each_connection([this, &exclude_context, &fluffyConnections](connection_context& context, nodetool::peerid_type peer_id, uint32_t support_flags)
+                                ^
+/mevacoin-gui/mevacoin/src/rpc/instanciations.cpp:37:39: note: in instantiation of member function 'cryptonote::t_cryptonote_protocol_handler<cryptonote::core>::relay_block' requested here
+namespace cryptonote { template class t_cryptonote_protocol_handler<cryptonote::core>; }
+                                      ^
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 46%] Built target obj_p2p
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 46%] Building CXX object mevacoin/src/cryptonote_protocol/CMakeFiles/obj_cryptonote_protocol.dir/block_queue.cpp.o
+[ 46%] Building CXX object mevacoin/src/cryptonote_protocol/CMakeFiles/obj_cryptonote_protocol.dir/cryptonote_protocol_handler-base.cpp.o
+[ 46%] Building CXX object mevacoin/src/cryptonote_protocol/CMakeFiles/obj_cryptonote_protocol.dir/levin_notify.cpp.o
+4 warnings generated.
+[ 46%] Building CXX object mevacoin/src/wallet/CMakeFiles/obj_wallet.dir/wallet_args.cpp.o
+[ 46%] Building CXX object mevacoin/src/wallet/CMakeFiles/obj_wallet.dir/ringdb.cpp.o
+[ 46%] Building CXX object mevacoin/src/wallet/CMakeFiles/obj_wallet.dir/node_rpc_proxy.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 46%] Built target obj_cryptonote_protocol
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 46%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_rpc_pub.dir/zmq_pub.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 46%] Built target obj_rpc_pub
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 46%] Building CXX object mevacoin/src/serialization/CMakeFiles/obj_serialization.dir/json_object.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 46%] Built target obj_serialization
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 47%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_daemon_messages.dir/message.cpp.o
+2 warnings generated.
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 47%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_daemon_rpc_server.dir/daemon_handler.cpp.o
+[ 49%] Building CXX object mevacoin/src/wallet/CMakeFiles/obj_wallet.dir/message_store.cpp.o
+[ 49%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_daemon_messages.dir/daemon_messages.cpp.o
+1 warning generated.
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 49%] Built target obj_rpc
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 50%] Built target obj_daemonizer
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 50%] Building CXX object mevacoin/src/blocks/CMakeFiles/obj_blocks.dir/blocks.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 53%] Built target obj_blocks
+[ 53%] Building CXX object mevacoin/src/wallet/CMakeFiles/obj_wallet.dir/message_transporter.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 53%] Built target obj_daemon_messages
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 54%] Built target zxcvbn_autogen
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 54%] Linking CXX static library libepee.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 54%] Built target epee
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 56%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/base58.cpp.o
+[ 56%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/dns_utils.cpp.o
+[ 56%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_daemon_rpc_server.dir/zmq_pub.cpp.o
+[ 56%] Building CXX object mevacoin/src/rpc/CMakeFiles/obj_daemon_rpc_server.dir/zmq_server.cpp.o
+[ 56%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/download.cpp.o
+[ 56%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/util.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 56%] Built target obj_daemon_rpc_server
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target obj_version
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 57%] Linking CXX static library libmnemonics.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target mnemonics
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target translations_autogen
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target qrdecoder_autogen_timestamp_deps
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target openpgp_autogen
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 57%] Linking CXX static library libblocks.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target blocks
+[ 57%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/pruning.cpp.o
+[ 57%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/spawn.cpp.o
+[ 57%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/threadpool.cpp.o
+[ 57%] Building CXX object mevacoin/src/common/CMakeFiles/obj_common.dir/updates.cpp.o
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target zxcvbn
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 57%] Linking CXX static library libcncrypto.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target cncrypto
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target version
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 57%] Linking CXX static library libcryptonote_format_utils_basic.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target cryptonote_format_utils_basic
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 57%] Built target hardforks
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 72%] Built target translations
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 72%] Built target qrdecoder_autogen
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 72%] Building CXX object src/openpgp/CMakeFiles/openpgp.dir/openpgp.cpp.o
+[ 73%] Linking CXX static library libopenpgp.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 73%] Built target openpgp
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 75%] Linking CXX static library libdevice_trezor.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 76%] Built target qrdecoder
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 76%] Built target device_trezor
+[ 76%] Built target qrscanner_autogen_timestamp_deps
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 76%] Built target obj_wallet
+[ 76%] Built target qrscanner_autogen
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 78%] Built target qrscanner
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 82%] Built target obj_common
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 82%] Linking CXX static library libcommon.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 82%] Built target common
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 82%] Linking CXX static library libnet.a
+[ 82%] Linking CXX static library libcheckpoints.a
+[ 82%] Linking CXX static library librpc_base.a
+[ 82%] Linking CXX static library libringct_basic.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 82%] Built target rpc_base
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 82%] Built target checkpoints
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 82%] Built target ringct_basic
+[ 82%] Built target daemonizer
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 82%] Linking CXX static library libdevice.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 82%] Built target device
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 82%] Built target net
+[ 82%] Linking CXX static library libringct.a
+[ 83%] Linking CXX static library libcryptonote_basic.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 83%] Built target ringct
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 83%] Built target cryptonote_basic
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 83%] Linking CXX static library libblockchain_db.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 83%] Built target blockchain_db
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 83%] Linking CXX static library libcryptonote_core.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 83%] Built target cryptonote_core
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 84%] Linking CXX static library libp2p.a
+[ 84%] Linking CXX static library libmultisig.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 84%] Built target p2p
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 84%] Built target multisig
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 84%] Linking CXX static library libcryptonote_protocol.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 84%] Linking CXX static library ../../../lib/libwallet.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 84%] Built target cryptonote_protocol
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 86%] Linking CXX static library librpc.a
+[ 86%] Linking CXX static library libserialization.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 86%] Built target serialization
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 86%] Linking CXX static library librpc_pub.a
+[ 86%] Linking CXX static library libdaemon_messages.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 86%] Built target rpc_pub
+[ 86%] Built target daemon_messages
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 86%] Built target wallet
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 86%] Linking CXX static library ../../../../lib/libwallet_api.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 86%] Built target wallet_api
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 86%] Built target rpc
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 86%] Built target mevacoin-wallet-gui_autogen_timestamp_deps
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 86%] Linking CXX static library libdaemon_rpc_server.a
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 86%] Built target daemon_rpc_server
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 86%] Building CXX object mevacoin/src/daemon/CMakeFiles/daemon.dir/command_parser_executor.cpp.o
+[ 87%] Building CXX object mevacoin/src/daemon/CMakeFiles/daemon.dir/command_server.cpp.o
+[ 87%] Building CXX object mevacoin/src/daemon/CMakeFiles/daemon.dir/daemon.cpp.o
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 87%] Automatic MOC and UIC for target mevacoin-wallet-gui
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 87%] Built target mevacoin-wallet-gui_autogen
+[ 87%] Building CXX object mevacoin/src/daemon/CMakeFiles/daemon.dir/main.cpp.o
+[ 87%] Building CXX object mevacoin/src/daemon/CMakeFiles/daemon.dir/rpc_command_executor.cpp.o
+[ 89%] Linking CXX executable ../../../bin/mevacoind
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[ 89%] Built target daemon
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+make[2]: Entering directory '/mevacoin-gui/build/Android/release'
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/mevacoin-wallet-gui_autogen/mocs_compilation.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/daemon/DaemonManager.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/AddressBook.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/PassphraseHelper.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/PendingTransaction.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/Subaddress.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/SubaddressAccount.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/TransactionHistory.cpp.o
+[ 89%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/TransactionInfo.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/UnsignedTransaction.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/Wallet.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/WalletListenerImpl.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/libwalletqt/WalletManager.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/main/Logger.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/main/main.cpp.o
+[ 90%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/main/oshelper.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/model/AddressBookModel.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/model/SubaddressAccountModel.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/model/SubaddressModel.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/model/TransactionHistoryModel.cpp.o
+[ 91%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/model/TransactionHistorySortFilterModel.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/p2pool/P2PoolManager.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/qt/KeysFiles.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/qt/downloader.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/qt/network.cpp.o
+[ 93%] Building CXX object src/CMakeFiles/mevacoin-wallet-gui.dir/qt/updater.cpp.o
+[ 93%] Linking CXX shared library ../android-build/libs/arm64-v8a/libmevacoin-wallet-gui_arm64-v8a.so
+make[2]: Leaving directory '/mevacoin-gui/build/Android/release'
+[100%] Built target mevacoin-wallet-gui
+make[1]: Leaving directory '/mevacoin-gui/build/Android/release'
+make: Leaving directory '/mevacoin-gui/build/Android/release/src'
++ echo >>> Fase A: make apk...
++ make -j4 apk
+>>> Fase A: make apk...
+Generating Android Package
+  Input file: /mevacoin-gui/build/Android/release/android_deployment_settings.json
+  Output directory: /mevacoin-gui/build/Android/release/android-build/
+  Application binary: mevacoin-wallet-gui
+  Android build platform: android-31
+  Install to device: No
+Warning: QML import could not be resolved in any of the import paths: FontAwesome
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.Wallet
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.QRCodeScanner
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.Clipboard
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.Downloader
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.NetworkType
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.WalletKeysFilesModel
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.Network
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.WalletManager
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.PendingTransaction
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.Settings
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.P2PoolManager
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.TransactionHistory
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.TransactionHistoryModel
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.AddressBook
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.AddressBookModel
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.DocumentHashHelper
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.TransactionInfo
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.Subaddress
+Warning: QML import could not be resolved in any of the import paths: mevacoinComponents.SubaddressModel
+Warning: QML import could not be resolved in any of the import paths: QtQuick.Extras.Private.CppUtils
+Warning: QML import could not be resolved in any of the import paths: QtQuick.Extras.Private.CppUtils
+Downloading https://services.gradle.org/distributions/gradle-7.2-bin.zip
+..........10%...........20%...........30%...........40%...........50%...........60%...........70%...........80%...........90%...........100%
+
+Welcome to Gradle 7.2!
+
+Here are the highlights of this release:
+ - Toolchain support for Scala
+ - More cache hits when Java source files have platform-specific line endings
+ - More resilient remote HTTP build cache behavior
+
+For more details see https://docs.gradle.org/7.2/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+Checking the license for package Android SDK Platform-Tools in /opt/android/sdk/licenses
+License for package Android SDK Platform-Tools accepted.
+Preparing "Install Android SDK Platform-Tools (revision: 37.0.0)".
+"Install Android SDK Platform-Tools (revision: 37.0.0)" ready.
+Installing Android SDK Platform-Tools in /opt/android/sdk/platform-tools
+"Install Android SDK Platform-Tools (revision: 37.0.0)" complete.
+"Install Android SDK Platform-Tools (revision: 37.0.0)" finished.
+> Task :preBuild UP-TO-DATE
+> Task :preDebugBuild UP-TO-DATE
+> Task :compileDebugAidl UP-TO-DATE
+> Task :compileDebugRenderscript NO-SOURCE
+> Task :generateDebugBuildConfig UP-TO-DATE
+> Task :javaPreCompileDebug UP-TO-DATE
+> Task :checkDebugAarMetadata UP-TO-DATE
+> Task :generateDebugResValues UP-TO-DATE
+> Task :generateDebugResources UP-TO-DATE
+> Task :createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :extractDeepLinksDebug UP-TO-DATE
+> Task :processDebugMainManifest
+> Task :mergeDebugResources
+> Task :processDebugManifest
+> Task :mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :mergeDebugShaders UP-TO-DATE
+> Task :compileDebugShaders NO-SOURCE
+> Task :generateDebugAssets UP-TO-DATE
+> Task :mergeDebugAssets
+> Task :processDebugManifestForPackage
+> Task :compressDebugAssets
+> Task :processDebugJavaRes NO-SOURCE
+> Task :mergeDebugJavaResource UP-TO-DATE
+> Task :checkDebugDuplicateClasses UP-TO-DATE
+> Task :desugarDebugFileDependencies UP-TO-DATE
+> Task :mergeExtDexDebug UP-TO-DATE
+> Task :mergeLibDexDebug UP-TO-DATE
+> Task :processDebugResources
+> Task :mergeDebugJniLibFolders UP-TO-DATE
+> Task :compileDebugJavaWithJavac UP-TO-DATE
+> Task :compileDebugSources UP-TO-DATE
+> Task :dexBuilderDebug
+> Task :mergeDebugNativeLibs UP-TO-DATE
+> Task :stripDebugDebugSymbols UP-TO-DATE
+> Task :mergeProjectDexDebug
+> Task :validateSigningDebug
+> Task :writeDebugAppMetadata UP-TO-DATE
+> Task :writeDebugSigningConfigVersions UP-TO-DATE
+> Task :packageDebug
+> Task :assembleDebug
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+See https://docs.gradle.org/7.2/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD SUCCESSFUL in 43s
+30 actionable tasks: 11 executed, 19 up-to-date
+Android package built successfully in 46.771 ms.
+  -- File: /mevacoin-gui/build/Android/release/android-build//build/outputs/apk/debug/android-build-debug.apk
+Built target apk
++ ABUILD=/mevacoin-gui/build/Android/release/android-build
++ ASRC=/mevacoin-gui/android
++ MANIFEST=/mevacoin-gui/build/Android/release/android-build/AndroidManifest.xml
++ echo >>> Fase B: patch risorse e manifest...
++ cp -r /mevacoin-gui/android/res/. /mevacoin-gui/build/Android/release/android-build/res/
+>>> Fase B: patch risorse e manifest...
++ python3
+  Manifest patchato
+>>> Fase C: rebuild Gradle...
++ echo >>> Fase C: rebuild Gradle...
++ export ANDROID_HOME=/opt/android/sdk
++ cd /mevacoin-gui/build/Android/release/android-build
++ chmod +x gradlew
++ ./gradlew assembleDebug --no-daemon
+To honour the JVM settings for this build a single-use Daemon process will be forked. See https://docs.gradle.org/7.2/userguide/gradle_daemon.html#sec:disabling_the_daemon.
+Daemon will be stopped at the end of the build 
+> Task :preBuild UP-TO-DATE
+> Task :preDebugBuild UP-TO-DATE
+> Task :compileDebugAidl UP-TO-DATE
+> Task :compileDebugRenderscript NO-SOURCE
+> Task :generateDebugBuildConfig UP-TO-DATE
+> Task :javaPreCompileDebug UP-TO-DATE
+> Task :checkDebugAarMetadata UP-TO-DATE
+> Task :generateDebugResValues UP-TO-DATE
+> Task :generateDebugResources UP-TO-DATE
+> Task :createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :extractDeepLinksDebug UP-TO-DATE
+> Task :mergeDebugResources
+> Task :processDebugMainManifest
+> Task :processDebugManifest
+> Task :mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :mergeDebugShaders UP-TO-DATE
+> Task :compileDebugShaders NO-SOURCE
+> Task :generateDebugAssets UP-TO-DATE
+> Task :mergeDebugAssets UP-TO-DATE
+> Task :compressDebugAssets UP-TO-DATE
+> Task :processDebugJavaRes NO-SOURCE
+> Task :mergeDebugJavaResource UP-TO-DATE
+> Task :checkDebugDuplicateClasses UP-TO-DATE
+> Task :desugarDebugFileDependencies UP-TO-DATE
+> Task :mergeExtDexDebug UP-TO-DATE
+> Task :mergeLibDexDebug UP-TO-DATE
+> Task :mergeDebugJniLibFolders UP-TO-DATE
+> Task :mergeDebugNativeLibs UP-TO-DATE
+> Task :stripDebugDebugSymbols UP-TO-DATE
+> Task :validateSigningDebug UP-TO-DATE
+> Task :writeDebugAppMetadata UP-TO-DATE
+> Task :writeDebugSigningConfigVersions UP-TO-DATE
+> Task :processDebugManifestForPackage
+> Task :processDebugResources
+> Task :compileDebugJavaWithJavac UP-TO-DATE
+> Task :compileDebugSources UP-TO-DATE
+> Task :dexBuilderDebug
+> Task :mergeProjectDexDebug
+> Task :packageDebug
+> Task :assembleDebug
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+See https://docs.gradle.org/7.2/userguide/command_line_interface.html#sec:command_line_warnings
+
+BUILD SUCCESSFUL in 8s
+30 actionable tasks: 8 executed, 22 up-to-date
++ APK=/mevacoin-gui/build/Android/release/android-build/build/outputs/apk/debug/android-build-debug.apk
++ ls -lh /mevacoin-gui/build/Android/release/android-build/build/outputs/apk/debug/android-build-debug.apk
+-rw-r--r-- 1 root root 95M May 13 11:41 /mevacoin-gui/build/Android/release/android-build/build/outputs/apk/debug/android-build-debug.apk
+>>> Firma APK...
++ echo >>> Firma APK...
++ apksigner sign --ks /mevacoin-gui/android-keystore/mevacoin-release.keystore --ks-pass pass:desy2011 --ks-key-alias mevacoin-release --key-pass pass:desy2011 --out /mevacoin-gui/mevacoin-release.apk /mevacoin-gui/build/Android/release/android-build/build/outputs/apk/debug/android-build-debug.apk
++ apksigner verify /mevacoin-gui/mevacoin-release.apk
+WARNING: META-INF/com/android/build/gradle/app-metadata.properties not protected by signature. Unauthorized modifications to this JAR entry will not be detected. Delete or move the entry outside of META-INF/.
++ ls -lh /mevacoin-gui/mevacoin-release.apk
+-rw-r--r-- 1 root root 95M May 13 11:42 /mevacoin-gui/mevacoin-release.apk
+
+============================================
+  BUILD COMPLETATO!
+-rw-r--r-- 1 root root 95M May 13 11:42 /root/wallet/mevacoin-release.apk
+  APK pronta in: /root/wallet/mevacoin-release.apk
+============================================
