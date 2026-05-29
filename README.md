@@ -64,7 +64,7 @@ MevaCoin is a private, secure, untraceable, decentralised digital currency. You 
 
 ## About this project
 
-This is the GUI for the [core MevaCoin implementation](https://github.com/mevacoin-project/mevacoin). It is open source and completely free to use without restrictions, except for those specified in the license agreement below. There are no restrictions on anyone creating an alternative implementation of MevaCoin that uses the protocol and network in a compatible manner.
+This is the GUI for the [core MevaCoin implementation](https://github.com/pasqualelembo78/mevacoin). It is open source and completely free to use without restrictions, except for those specified in the license agreement below. There are no restrictions on anyone creating an alternative implementation of MevaCoin that uses the protocol and network in a compatible manner.
 
 As with many development projects, the repository on Github is considered to be the "staging" area for the latest changes. Before changes are merged into that branch on the main repository, they are tested by individual developers in their own branches, submitted as a pull request, and then subsequently tested by contributors who focus on testing and code reviews. That having been said, the repository should be carefully considered before using it in a production environment, unless there is a patch in the repository for a particular show-stopping issue you are experiencing. It is generally a better idea to use a tagged release for stability.
 
@@ -115,7 +115,7 @@ Packaging for your favorite distribution would be a welcome contribution!
 
 *Note*: Qt 5.12 is the minimum version required to build the GUI.
 
-*Note*: Official GUI releases use mevacoin-wallet-gui from this process alongside the supporting binaries (mevacoind, etc) from the [CLI deterministic builds](https://github.com/mevacoin-project/mevacoin/blob/release-v0.18/contrib/gitian/README.md).
+*Note*: Official GUI releases use mevacoin-wallet-gui from this process alongside the supporting binaries (mevacoind, etc) from the [CLI deterministic builds](https://github.com/pasqualelembo78/mevacoin/blob/release-v0.18/contrib/gitian/README.md).
 
 ### Building Reproducible Windows static binaries with Docker (any OS)
 
