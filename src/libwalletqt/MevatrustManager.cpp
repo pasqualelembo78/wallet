@@ -3,11 +3,22 @@
 #include <QJsonValue>
 #include <QUrl>
 #include <QNetworkRequest>
+#include <QByteArray>
+#include <QAuthenticator>
 
 MevatrustManager::MevatrustManager(QObject *parent)
     : QObject(parent)
     , m_network(new QNetworkAccessManager(this))
 {
+    // Handle HTTP Digest auth (RFC 2617) -- used by mevacoind
+    connect(m_network, &QNetworkAccessManager::authenticationRequired,
+            this, [this](QNetworkReply *reply, QAuthenticator *authenticator) {
+        Q_UNUSED(reply)
+        if (!m_daemonUsername.isEmpty()) {
+            authenticator->setUser(m_daemonUsername);
+            authenticator->setPassword(m_daemonPassword);
+        }
+    });
 }
 
 QString MevatrustManager::daemonAddress() const
@@ -25,6 +36,32 @@ void MevatrustManager::setDaemonAddress(const QString &address)
     if (m_daemonAddress != address) {
         m_daemonAddress = address;
         emit daemonAddressChanged();
+    }
+}
+
+QString MevatrustManager::daemonUsername() const
+{
+    return m_daemonUsername;
+}
+
+QString MevatrustManager::daemonPassword() const
+{
+    return m_daemonPassword;
+}
+
+void MevatrustManager::setDaemonUsername(const QString &username)
+{
+    if (m_daemonUsername != username) {
+        m_daemonUsername = username;
+        emit daemonUsernameChanged();
+    }
+}
+
+void MevatrustManager::setDaemonPassword(const QString &password)
+{
+    if (m_daemonPassword != password) {
+        m_daemonPassword = password;
+        emit daemonPasswordChanged();
     }
 }
 
@@ -55,11 +92,9 @@ void MevatrustManager::rpcCallInternal(const QString &method, const QJsonObject 
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    QNetworkReply *reply = m_network->post(req, QJsonDocument(rpc).toJson(QJsonDocument::Compact));
+    auto *reply = m_network->post(req, QJsonDocument(rpc).toJson(QJsonDocument::Compact));
     connect(reply, &QNetworkReply::finished, this, [this, reply, callback]() {
         reply->deleteLater();
-        m_busy = false;
-        emit busyChanged();
 
         if (reply->error() != QNetworkReply::NoError) {
             emit errorOccurred("RPC error: " + reply->errorString());
@@ -316,5 +351,46 @@ void MevatrustManager::unbanNode(const QString &nodeId, const QString &callerPub
     params["caller_pubkey"] = callerPubkey;
     rpcCall("unban_node", params, [this](const QJsonObject &result) {
         emit unbanNodeReceived(result);
+    });
+}
+
+// ── Store RPC methods ─────────────────────────────────────────────────────
+
+void MevatrustManager::storeList(bool activeOnly, quint32 limit, bool top)
+{
+    QJsonObject params;
+    params["active_only"] = activeOnly;
+    if (limit > 0) params["limit"] = (qint32)limit;
+    params["top"] = top;
+    rpcCall("store_list", params, [this](const QJsonObject &result) {
+        emit storeListReceived(result);
+    });
+}
+
+void MevatrustManager::storeShow(const QString &storeId)
+{
+    QJsonObject params;
+    params["store_id"] = storeId;
+    rpcCall("store_show", params, [this](const QJsonObject &result) {
+        emit storeShowReceived(result);
+    });
+}
+
+void MevatrustManager::storeSearch(const QString &keyword, bool searchItems)
+{
+    QJsonObject params;
+    params["keyword"] = keyword;
+    params["search_items"] = searchItems;
+    rpcCall("store_search", params, [this](const QJsonObject &result) {
+        emit storeSearchReceived(result);
+    });
+}
+
+void MevatrustManager::storeMyPurchases(const QString &buyerPubkey)
+{
+    QJsonObject params;
+    params["buyer_pubkey"] = buyerPubkey;
+    rpcCall("store_my_purchases", params, [this](const QJsonObject &result) {
+        emit storeMyPurchasesReceived(result);
     });
 }

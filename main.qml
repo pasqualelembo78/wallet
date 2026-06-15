@@ -423,6 +423,11 @@ ApplicationWindow {
 
         console.log("initializing with daemon address: ", currentDaemonAddress)
         mevatrustManager.daemonAddress = currentDaemonAddress;
+        if (persistentSettings.useRemoteNode) {
+            const rn = remoteNodesModel.currentRemoteNode();
+            mevatrustManager.daemonUsername = rn.username;
+            mevatrustManager.daemonPassword = rn.password;
+        }
         currentWallet.initAsync(
             currentDaemonAddress,
             isTrustedDaemon(),
@@ -739,6 +744,8 @@ ApplicationWindow {
             const remoteNode = remoteNodesModel.currentRemoteNode();
             currentDaemonAddress = remoteNode.address;
             mevatrustManager.daemonAddress = currentDaemonAddress;
+            mevatrustManager.daemonUsername = remoteNode.username;
+            mevatrustManager.daemonPassword = remoteNode.password;
             currentWallet.setDaemonLogin(remoteNode.username, remoteNode.password);
             currentWallet.initAsync(
                 currentDaemonAddress,
@@ -769,6 +776,8 @@ ApplicationWindow {
         persistentSettings.useRemoteNode = false;
         currentDaemonAddress = localDaemonAddress
         mevatrustManager.daemonAddress = currentDaemonAddress;
+        mevatrustManager.daemonUsername = "";
+        mevatrustManager.daemonPassword = "";
         currentWallet.setDaemonLogin("", "");
         currentWallet.initAsync(
             currentDaemonAddress,

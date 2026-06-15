@@ -295,6 +295,21 @@ public:
     Q_INVOKABLE QString buildUnbanExtra(const QString &nodeIdHex);
     //! Build validator promotion tx_extra blob (hex)
     Q_INVOKABLE QString buildValidatorPromotionExtra(const QString &nodeIdHex, const QString &nodePubkeyHex);
+    // ── Store tx building ────────────────────────────────────────────────
+    //! Build store CREATE tx_extra blob (hex)
+    Q_INVOKABLE QString buildStoreCreateExtra(const QString &name, const QString &description,
+                                              const QString &url = "");
+    //! Build store UPDATE tx_extra blob (hex)
+    Q_INVOKABLE QString buildStoreUpdateExtra(const QString &storeIdHex, const QString &name,
+                                              const QString &description, const QString &url = "");
+    //! Build item LIST tx_extra blob (hex)
+    Q_INVOKABLE QString buildItemListExtra(const QString &storeIdHex, const QString &name,
+                                           const QString &description, quint64 price,
+                                           const QString &category = "", const QString &metadata = "");
+    //! Build item DELIST tx_extra blob (hex)
+    Q_INVOKABLE QString buildItemDelistExtra(const QString &storeIdHex, const QString &itemIdHex);
+    //! Build item BUY tx_extra blob (hex)
+    Q_INVOKABLE QString buildItemBuyExtra(const QString &storeIdHex, const QString &itemIdHex);
     //! Save node_id to ~/.mevacoin/mevatrust/node_id
     Q_INVOKABLE void saveNodeIdToFile(const QString &nodeIdHex);
     //! Read saved node_id from ~/.mevacoin/mevatrust/node_id

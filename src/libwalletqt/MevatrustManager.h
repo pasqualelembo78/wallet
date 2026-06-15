@@ -12,15 +12,21 @@ class MevatrustManager : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString daemonAddress READ daemonAddress WRITE setDaemonAddress NOTIFY daemonAddressChanged)
+    Q_PROPERTY(QString daemonUsername READ daemonUsername WRITE setDaemonUsername NOTIFY daemonUsernameChanged)
+    Q_PROPERTY(QString daemonPassword READ daemonPassword WRITE setDaemonPassword NOTIFY daemonPasswordChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 
 public:
     explicit MevatrustManager(QObject *parent = nullptr);
 
     QString daemonAddress() const;
+    QString daemonUsername() const;
+    QString daemonPassword() const;
     bool busy() const;
 
     Q_INVOKABLE void setDaemonAddress(const QString &address);
+    Q_INVOKABLE void setDaemonUsername(const QString &username);
+    Q_INVOKABLE void setDaemonPassword(const QString &password);
     Q_INVOKABLE void lookupNode(const QString &nodeId);
     Q_INVOKABLE void lookupNodeByWallet(const QString &walletAddress);
     Q_INVOKABLE void getNetworkStats();
@@ -49,8 +55,16 @@ public:
     Q_INVOKABLE void banNode(const QString &nodeId, const QString &reason, const QString &callerPubkey);
     Q_INVOKABLE void unbanNode(const QString &nodeId, const QString &callerPubkey);
 
+    // ── Store RPC methods ────────────────────────────────────────────────
+    Q_INVOKABLE void storeList(bool activeOnly = true, quint32 limit = 0, bool top = true);
+    Q_INVOKABLE void storeShow(const QString &storeId);
+    Q_INVOKABLE void storeSearch(const QString &keyword, bool searchItems = true);
+    Q_INVOKABLE void storeMyPurchases(const QString &buyerPubkey);
+
 signals:
     void daemonAddressChanged();
+    void daemonUsernameChanged();
+    void daemonPasswordChanged();
     void busyChanged();
     void nodeInfoReceived(const QJsonObject &info);
     void nodeBadgesReceived(const QJsonObject &badges);
@@ -78,6 +92,11 @@ signals:
     void eligibleNodesReceived(const QJsonObject &result);
     void banNodeReceived(const QJsonObject &result);
     void unbanNodeReceived(const QJsonObject &result);
+    // Store response signals
+    void storeListReceived(const QJsonObject &result);
+    void storeShowReceived(const QJsonObject &result);
+    void storeSearchReceived(const QJsonObject &result);
+    void storeMyPurchasesReceived(const QJsonObject &result);
 
 private:
     void rpcCall(const QString &method, const QJsonObject &params,
@@ -86,6 +105,8 @@ private:
                          std::function<void(const QJsonObject&)> callback);
 
     QString m_daemonAddress;
+    QString m_daemonUsername;
+    QString m_daemonPassword;
     bool m_busy{false};
     QNetworkAccessManager *m_network{nullptr};
 };

@@ -63,7 +63,65 @@ Rectangle {
             opacity: 0.7
         }
 
-        Item { height: 10; width: 1 }
+        Item { height: 8; width: 1 }
+
+        // ── Preferred Node Connection ──────────────────────────────
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: nodeConnLayout.implicitHeight + 12
+            color: Qt.rgla(0,0.5,1,0.08)
+            radius: 6
+            border.color: Qt.rgba(0,0.5,1,0.2)
+            border.width: 1
+
+            RowLayout {
+                id: nodeConnLayout
+                anchors.fill: parent; anchors.margins: 8; spacing: 8
+
+                MevaCoinComponents.Label {
+                    text: qsTr("Node:") + translationManager.emptyString
+                    fontSize: 12; opacity: 0.7
+                }
+                MevaCoinComponents.LineEdit {
+                    id: preferredNodeAddr
+                    Layout.preferredWidth: 220
+                    Layout.fillWidth: true
+                    placeholderText: qsTr("host:port (e.g. 82.165.218.56:18081)") + translationManager.emptyString
+                    text: mevatrustManager.daemonAddress
+                    fontSize: 12
+                }
+                MevaCoinComponents.LineEdit {
+                    id: preferredNodeUser
+                    Layout.preferredWidth: 100
+                    placeholderText: qsTr("Username") + translationManager.emptyString
+                    fontSize: 12
+                }
+                MevaCoinComponents.LineEdit {
+                    id: preferredNodePass
+                    Layout.preferredWidth: 100
+                    placeholderText: qsTr("Password") + translationManager.emptyString
+                    password: true
+                    fontSize: 12
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Connect") + translationManager.emptyString
+                    primary: true; small: true
+                    enabled: preferredNodeAddr.text.trim().length > 0
+                    onClicked: {
+                        var addr = preferredNodeAddr.text.trim();
+                        if (addr.indexOf("://") === -1)
+                            addr = "http://" + addr;
+                        mevatrustManager.daemonAddress = addr;
+                        mevatrustManager.daemonUsername = preferredNodeUser.text.trim();
+                        mevatrustManager.daemonPassword = preferredNodePass.text.trim();
+                        appWindow.showStatusMessage(qsTr("Connected to ") + addr, 3);
+                        refreshMyNode();
+                    }
+                }
+            }
+        }
+
+        Item { height: 8; width: 1 }
 
         Flow {
             Layout.fillWidth: true
@@ -89,6 +147,10 @@ Rectangle {
             MevaCoinComponents.StandardButton {
                 text: qsTr("Top Nodes") + translationManager.emptyString
                 onClicked: topNodesSheet.open()
+            }
+            MevaCoinComponents.StandardButton {
+                text: qsTr("Stores") + translationManager.emptyString
+                onClicked: storeManagerDialog.open()
             }
         }
 
@@ -449,6 +511,42 @@ Rectangle {
 
             Item { height: 8; width: 1 }
 
+            // ── Admin Actions ────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true; implicitHeight: adminActionsLayout.implicitHeight + 10
+                color: Qt.rgba(1,0.4,0,0.06); radius: 4; border.color: Qt.rgba(1,0.4,0,0.15); border.width: 1
+                visible: myNodeId.length >= 64
+
+                ColumnLayout {
+                    anchors.fill: parent; anchors.margins: 8; spacing: 6
+                    MevaCoinComponents.Label { text: qsTr("Admin Actions") + translationManager.emptyString; fontSize: 12; fontBold: true; color: MevaCoinComponents.Style.orange }
+                    RowLayout {
+                        id: adminActionsLayout; spacing: 8
+                        MevaCoinComponents.StandardButton {
+                            text: qsTr("Promote to Validator") + translationManager.emptyString; small: true
+                            onClicked: {
+                                myNodeSheet.close();
+                                validatorPromotionDialog.open();
+                            }
+                        }
+                        MevaCoinComponents.StandardButton {
+                            text: qsTr("Eligible Nodes") + translationManager.emptyString; small: true
+                            onClicked: mevatrustManager.getEligibleNodes()
+                        }
+                        MevaCoinComponents.StandardButton {
+                            text: qsTr("Ban...") + translationManager.emptyString; small: true
+                            onClicked: {
+                                myNodeSheet.close();
+                                banNodeDialog.open();
+                            }
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                }
+            }
+
+            Item { height: 8; width: 1 }
+
             MevaCoinComponents.Label { text: qsTr("Recent Incentive History") + translationManager.emptyString; fontSize: 16; fontBold: true }
 
             Rectangle {
@@ -631,11 +729,15 @@ Rectangle {
                     primary: true
                     onClicked: {
                         deregisterConfirmDialog.close();
-                        mevatrustManager.unregisterNode(
-                            myNodeId,
-                            currentWallet ? currentWallet.address(0, 0) : "",
-                            ""
-                        );
+                        if (!currentWallet) return;
+                        var extraHex = currentWallet.buildDeregisterExtra(myNodeId);
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build deregistration tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionAsync(extraHex);
                     }
                 }
             }
@@ -906,6 +1008,35 @@ Rectangle {
                     onClicked: circleInfoDialog.close()
                 }
             }
+
+            // ── Change Admin ──────────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true; implicitHeight: changeAdminLayout.implicitHeight + 10
+                color: Qt.rgba(1,0.8,0,0.06); radius: 4; border.color: Qt.rgba(1,0.8,0,0.2); border.width: 1
+                visible: circleInfoDialog.circleData.admin_pubkey === (currentWallet ? currentWallet.publicSpendKey : "")
+
+                RowLayout {
+                    id: changeAdminLayout
+                    anchors.fill: parent; anchors.margins: 6; spacing: 6
+                    MevaCoinComponents.Label { text: qsTr("New Admin Pubkey:") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
+                    MevaCoinComponents.LineEdit {
+                        id: newAdminKeyInput; Layout.fillWidth: true
+                        placeholderText: qsTr("64-char hex public key") + translationManager.emptyString; fontSize: 11
+                    }
+                    MevaCoinComponents.StandardButton {
+                        text: qsTr("Change Admin") + translationManager.emptyString; small: true
+                        enabled: newAdminKeyInput.text.trim().length === 64
+                        onClicked: {
+                            var pk = currentWallet ? currentWallet.publicSpendKey : "";
+                            mevatrustManager.circleChangeAdmin(
+                                circleInfoDialog.circleData.circle_id || "",
+                                newAdminKeyInput.text.trim(), pk
+                            );
+                            newAdminKeyInput.text = "";
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1081,6 +1212,501 @@ Rectangle {
                 MevaCoinComponents.StandardButton {
                     text: qsTr("Close") + translationManager.emptyString
                     onClicked: mevatrustTxResultDialog.close()
+                }
+            }
+        }
+    }
+
+    // ── STORE MANAGER DIALOG ──────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: storeManagerDialog
+        title: qsTr("Store Manager") + translationManager.emptyString
+        width: Math.min(650, mevatrustPage.width * 0.92)
+        height: mobileMode ? 450 : 500
+
+        property string selectedStoreId: ""
+
+        onOpened: {
+            mevatrustManager.storeList(true, 50, true);
+        }
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 8
+
+            RowLayout {
+                Layout.fillWidth: true
+                MevaCoinComponents.Label { text: qsTr("Stores") + translationManager.emptyString; fontSize: 18; fontBold: true }
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Create Store") + translationManager.emptyString; primary: true
+                    onClicked: createStoreDialog.open()
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Refresh") + translationManager.emptyString
+                    onClicked: mevatrustManager.storeList(true, 50, true)
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true; spacing: 6
+                MevaCoinComponents.LineEdit {
+                    id: storeSearchInput; Layout.fillWidth: true
+                    placeholderText: qsTr("Search stores...") + translationManager.emptyString; fontSize: 12
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Search") + translationManager.emptyString; small: true
+                    onClicked: mevatrustManager.storeSearch(storeSearchInput.text.trim(), true)
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("My Purchases") + translationManager.emptyString; small: true
+                    onClicked: {
+                        var pk = currentWallet ? currentWallet.publicSpendKey : "";
+                        mevatrustManager.storeMyPurchases(pk);
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                color: MevaCoinComponents.Style.titleBarBackgroundGradientStart
+                radius: 6; border.color: MevaCoinComponents.Style.dividerColor; border.width: 1; clip: true
+
+                Flickable {
+                    anchors.fill: parent; anchors.margins: 8
+                    contentHeight: storeListLayout.implicitHeight; interactive: true
+                    ColumnLayout {
+                        id: storeListLayout; width: parent.width; spacing: 4
+                        Repeater {
+                            id: storeRepeater; model: ListModel {}
+                            delegate: Rectangle {
+                                Layout.fillWidth: true; height: 48; radius: 4
+                                color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
+
+                                RowLayout {
+                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    ColumnLayout { spacing: 1; Layout.fillWidth: true
+                                        MevaCoinComponents.Label { text: storeName; fontSize: 13; fontBold: true }
+                                        MevaCoinComponents.Label { text: storeId.substring(0, 16) + "..."; fontSize: 10; opacity: 0.5; fontFamily: "Courier" }
+                                    }
+                                    MevaCoinComponents.Label { text: qsTr("Items: ") + itemCount; fontSize: 11; opacity: 0.6 }
+                                    MevaCoinComponents.StandardButton {
+                                        text: qsTr("View") + translationManager.emptyString; small: true
+                                        onClicked: {
+                                            storeManagerDialog.selectedStoreId = storeId;
+                                            mevatrustManager.storeShow(storeId);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Connections {
+            target: mevatrustManager
+            onStoreListReceived: {
+                storeRepeater.model.clear();
+                var stores = result.stores || [];
+                for (var i = 0; i < stores.length; i++) {
+                    var s = stores[i];
+                    storeRepeater.model.append({
+                        storeId: s.store_id || "",
+                        storeName: s.name || "Unnamed",
+                        storeDesc: s.description || "",
+                        itemCount: s.item_count || 0,
+                        ownerPubkey: s.owner_pubkey || ""
+                    });
+                }
+            }
+            onStoreSearchReceived: {
+                storeRepeater.model.clear();
+                var stores = result.stores || [];
+                for (var i = 0; i < stores.length; i++) {
+                    var s = stores[i];
+                    storeRepeater.model.append({
+                        storeId: s.store_id || "",
+                        storeName: s.name || "Unnamed",
+                        storeDesc: s.description || "",
+                        itemCount: s.item_count || 0,
+                        ownerPubkey: s.owner_pubkey || ""
+                    });
+                }
+            }
+        }
+    }
+
+    // ── CREATE STORE DIALOG ───────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: createStoreDialog
+        title: qsTr("Create New Store") + translationManager.emptyString
+        width: Math.min(500, mevatrustPage.width * 0.92)
+        height: 300
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 10
+
+            MevaCoinComponents.Label { text: qsTr("Store Name:") + translationManager.emptyString; fontSize: 13 }
+            MevaCoinComponents.LineEdit {
+                id: csName; Layout.fillWidth: true
+                placeholderText: qsTr("Enter store name") + translationManager.emptyString
+            }
+
+            MevaCoinComponents.Label { text: qsTr("Description:") + translationManager.emptyString; fontSize: 13 }
+            MevaCoinComponents.LineEdit {
+                id: csDesc; Layout.fillWidth: true
+                placeholderText: qsTr("Short description of your store") + translationManager.emptyString
+            }
+
+            MevaCoinComponents.Label { text: qsTr("URL (optional):") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
+            MevaCoinComponents.LineEdit {
+                id: csUrl; Layout.fillWidth: true
+                placeholderText: qsTr("https://...") + translationManager.emptyString
+            }
+
+            Rectangle {
+                Layout.fillWidth: true; height: 30; radius: 4
+                color: Qt.rgba(1,0.8,0,0.1); border.color: Qt.rgba(1,0.8,0,0.3)
+                MevaCoinComponents.Label {
+                    anchors.fill: parent; anchors.margins: 6
+                    text: qsTr("⚠ Creates a self-send tx. Store deposit: 10 MVC.") + translationManager.emptyString
+                    fontSize: 10; wrapMode: Text.Wrap; color: MevaCoinComponents.Style.orange
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true; spacing: 10
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Cancel") + translationManager.emptyString
+                    onClicked: createStoreDialog.close()
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Create Store") + translationManager.emptyString; primary: true
+                    enabled: csName.text.trim().length > 0
+                    onClicked: {
+                        if (!currentWallet) return;
+                        createStoreDialog.close();
+                        var extraHex = currentWallet.buildStoreCreateExtra(
+                            csName.text.trim(), csDesc.text.trim(), csUrl.text.trim()
+                        );
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build store creation tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionAsync(extraHex, 10000000000000ULL);
+                        csName.text = ""; csDesc.text = ""; csUrl.text = "";
+                    }
+                }
+            }
+        }
+    }
+
+    // ── STORE DETAILS DIALOG ─────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: storeDetailsDialog
+        title: qsTr("Store Details") + translationManager.emptyString
+        property var storeData: ({})
+        property string storeId: ""
+        property string myPubkey: currentWallet ? currentWallet.publicSpendKey : ""
+        width: Math.min(600, mevatrustPage.width * 0.92)
+        height: mobileMode ? 450 : 500
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 8
+
+            MevaCoinComponents.Label { id: sdName; text: "--"; fontSize: 20; fontBold: true }
+            MevaCoinComponents.Label { id: sdDesc; text: ""; fontSize: 12; opacity: 0.7; wrapMode: Text.Wrap; Layout.fillWidth: true }
+            MevaCoinComponents.Label { id: sdOwner; text: ""; fontSize: 10; opacity: 0.5; fontFamily: "Courier" }
+
+            Rectangle { Layout.fillWidth: true; height: 1; color: MevaCoinComponents.Style.dividerColor; opacity: 0.3 }
+
+            RowLayout {
+                Layout.fillWidth: true
+                MevaCoinComponents.Label { text: qsTr("Items") + translationManager.emptyString; fontSize: 16; fontBold: true }
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("List Item") + translationManager.emptyString; primary: true
+                    visible: storeDetailsDialog.storeData.owner_pubkey === storeDetailsDialog.myPubkey
+                    onClicked: listItemDialog.open()
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                color: MevaCoinComponents.Style.titleBarBackgroundGradientStart
+                radius: 6; border.color: MevaCoinComponents.Style.dividerColor; border.width: 1; clip: true
+
+                Flickable {
+                    anchors.fill: parent; anchors.margins: 8
+                    contentHeight: itemListLayout.implicitHeight; interactive: true
+                    ColumnLayout {
+                        id: itemListLayout; width: parent.width; spacing: 4
+                        Repeater {
+                            id: itemRepeater; model: ListModel {}
+                            delegate: Rectangle {
+                                Layout.fillWidth: true; height: 56; radius: 4
+                                color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
+
+                                RowLayout {
+                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    ColumnLayout { spacing: 1; Layout.fillWidth: true
+                                        MevaCoinComponents.Label { text: itemName; fontSize: 13; fontBold: true }
+                                        MevaCoinComponents.Label { text: itemDesc; fontSize: 10; opacity: 0.6; elide: Text.ElideRight; Layout.fillWidth: true }
+                                        MevaCoinComponents.Label { text: itemId.substring(0, 16) + "..."; fontSize: 9; opacity: 0.4; fontFamily: "Courier" }
+                                    }
+                                    ColumnLayout { spacing: 1; Layout.alignment: Qt.AlignRight
+                                        MevaCoinComponents.Label { text: qsTr("Price: ") + walletManager.displayAmount(itemPrice); fontSize: 13; color: MevaCoinComponents.Style.wookeyGreen }
+                                        MevaCoinComponents.Label { text: itemCategory; fontSize: 10; opacity: 0.5 }
+                                    }
+                                    MevaCoinComponents.StandardButton {
+                                        text: qsTr("Buy") + translationManager.emptyString; small: true; primary: true
+                                        enabled: storeDetailsDialog.storeData.owner_pubkey !== storeDetailsDialog.myPubkey
+                                        onClicked: {
+                                            if (!currentWallet) return;
+                                            var extraHex = currentWallet.buildItemBuyExtra(
+                                                storeDetailsDialog.storeId, itemId
+                                            );
+                                            if (extraHex.length === 0) {
+                                                mevatrustTxResultDialog.txSuccess = false;
+                                                mevatrustTxResultDialog.txError = qsTr("Failed to build buy tx") + translationManager.emptyString;
+                                                mevatrustTxResultDialog.open();
+                                                return;
+                                            }
+                                            currentWallet.submitMevatrustTransactionAsync(extraHex, itemPrice);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Connections {
+            target: mevatrustManager
+            onStoreShowReceived: {
+                storeDetailsDialog.storeData = result;
+                sdName.text = result.name || "--";
+                sdDesc.text = result.description || "";
+                sdOwner.text = qsTr("Owner: ") + (result.owner_pubkey || "").substring(0, 16) + "...";
+                itemRepeater.model.clear();
+                var items = result.items || [];
+                for (var i = 0; i < items.length; i++) {
+                    var it = items[i];
+                    itemRepeater.model.append({
+                        itemId: it.item_id || "",
+                        itemName: it.name || "Unnamed",
+                        itemDesc: it.description || "",
+                        itemPrice: it.price || 0,
+                        itemCategory: it.category || ""
+                    });
+                }
+                storeDetailsDialog.open();
+            }
+            onStoreMyPurchasesReceived: {
+                var purchases = result.purchases || [];
+                var msg = purchases.length > 0
+                    ? qsTr("You have ") + purchases.length + qsTr(" purchase(s)")
+                    : qsTr("No purchases yet") + translationManager.emptyString;
+                appWindow.showStatusMessage(msg, 3);
+            }
+        }
+    }
+
+    // ── LIST ITEM DIALOG ──────────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: listItemDialog
+        title: qsTr("List New Item") + translationManager.emptyString
+        width: Math.min(500, mevatrustPage.width * 0.92)
+        height: 350
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 10
+
+            MevaCoinComponents.Label { text: qsTr("Item Name:") + translationManager.emptyString; fontSize: 13 }
+            MevaCoinComponents.LineEdit { id: liName; Layout.fillWidth: true; placeholderText: qsTr("Enter item name") + translationManager.emptyString }
+
+            MevaCoinComponents.Label { text: qsTr("Description:") + translationManager.emptyString; fontSize: 13 }
+            MevaCoinComponents.LineEdit { id: liDesc; Layout.fillWidth: true; placeholderText: qsTr("Short description") + translationManager.emptyString }
+
+            RowLayout { spacing: 10
+                ColumnLayout { Layout.fillWidth: true
+                    MevaCoinComponents.Label { text: qsTr("Price (atomic units):") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
+                    MevaCoinComponents.LineEdit { id: liPrice; Layout.fillWidth: true; placeholderText: "1000000000000"; validator: RegExpValidator { regExp: /[0-9]*/ } }
+                }
+                ColumnLayout { Layout.fillWidth: true
+                    MevaCoinComponents.Label { text: qsTr("Category:") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
+                    MevaCoinComponents.LineEdit { id: liCategory; Layout.fillWidth: true; placeholderText: qsTr("e.g. electronics") + translationManager.emptyString }
+                }
+            }
+
+            MevaCoinComponents.Label { text: qsTr("Metadata (optional):") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
+            MevaCoinComponents.LineEdit { id: liMetadata; Layout.fillWidth: true; placeholderText: qsTr("Additional info") + translationManager.emptyString }
+
+            Rectangle {
+                Layout.fillWidth: true; height: 30; radius: 4
+                color: Qt.rgba(1,0.8,0,0.1); border.color: Qt.rgba(1,0.8,0,0.3)
+                MevaCoinComponents.Label {
+                    anchors.fill: parent; anchors.margins: 6
+                    text: qsTr("⚠ Item deposit: 1 MVC. Creates a self-send tx.") + translationManager.emptyString
+                    fontSize: 10; wrapMode: Text.Wrap; color: MevaCoinComponents.Style.orange
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true; spacing: 10
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Cancel") + translationManager.emptyString
+                    onClicked: listItemDialog.close()
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("List Item") + translationManager.emptyString; primary: true
+                    enabled: liName.text.trim().length > 0 && liPrice.text.trim().length > 0
+                    onClicked: {
+                        if (!currentWallet) return;
+                        listItemDialog.close();
+                        var price = parseInt(liPrice.text.trim()) || 0;
+                        var extraHex = currentWallet.buildItemListExtra(
+                            storeDetailsDialog.storeId, liName.text.trim(),
+                            liDesc.text.trim(), price,
+                            liCategory.text.trim(), liMetadata.text.trim()
+                        );
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build item listing tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionAsync(extraHex, 1000000000000ULL);
+                        liName.text = ""; liDesc.text = ""; liPrice.text = "";
+                        liCategory.text = ""; liMetadata.text = "";
+                    }
+                }
+            }
+        }
+    }
+
+    // ── BAN NODE DIALOG ──────────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: banNodeDialog
+        title: qsTr("Ban Node") + translationManager.emptyString
+        width: Math.min(450, mevatrustPage.width * 0.92)
+        height: 250
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 10
+
+            MevaCoinComponents.Label { text: qsTr("Node ID:") + translationManager.emptyString; fontSize: 12 }
+            MevaCoinComponents.LineEdit {
+                id: banNodeId; Layout.fillWidth: true
+                placeholderText: qsTr("64-char hex node ID") + translationManager.emptyString; fontSize: 12
+            }
+
+            MevaCoinComponents.Label { text: qsTr("Reason:") + translationManager.emptyString; fontSize: 12 }
+            MevaCoinComponents.LineEdit {
+                id: banReason; Layout.fillWidth: true
+                placeholderText: qsTr("Reason for ban") + translationManager.emptyString
+            }
+
+            RowLayout {
+                Layout.fillWidth: true; spacing: 10
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Cancel") + translationManager.emptyString
+                    onClicked: banNodeDialog.close()
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Ban via RPC") + translationManager.emptyString; primary: true
+                    enabled: banNodeId.text.trim().length >= 64
+                    onClicked: {
+                        var pk = currentWallet ? currentWallet.publicSpendKey : "";
+                        mevatrustManager.banNode(banNodeId.text.trim(), banReason.text.trim(), pk);
+                        banNodeDialog.close();
+                        banNodeId.text = ""; banReason.text = "";
+                    }
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Ban via Tx") + translationManager.emptyString
+                    enabled: banNodeId.text.trim().length >= 64
+                    onClicked: {
+                        if (!currentWallet) return;
+                        banNodeDialog.close();
+                        var extraHex = currentWallet.buildBanExtra(banNodeId.text.trim(), banReason.text.trim());
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build ban tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionAsync(extraHex);
+                        banNodeId.text = ""; banReason.text = "";
+                    }
+                }
+            }
+        }
+    }
+
+    // ── VALIDATOR PROMOTION DIALOG ────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: validatorPromotionDialog
+        title: qsTr("Promote to Validator") + translationManager.emptyString
+        width: Math.min(450, mevatrustPage.width * 0.92)
+        height: 250
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 10
+
+            MevaCoinComponents.Label { text: qsTr("Node ID:") + translationManager.emptyString; fontSize: 12; opacity: 0.6 }
+            MevaCoinComponents.Label {
+                text: myNodeId.length >= 64 ? myNodeId : qsTr("No node registered") + translationManager.emptyString
+                fontSize: 12; fontFamily: "Courier"; wrapMode: Text.Wrap
+            }
+
+            MevaCoinComponents.Label { text: qsTr("Node Public Key:") + translationManager.emptyString; fontSize: 12; opacity: 0.6 }
+            RowLayout { spacing: 6
+                MevaCoinComponents.LineEdit {
+                    id: vpNodePubkey; Layout.fillWidth: true
+                    placeholderText: qsTr("Click Detect or enter hex key") + translationManager.emptyString; readOnly: true; fontSize: 11
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Detect") + translationManager.emptyString; small: true
+                    onClicked: {
+                        if (!currentWallet) return;
+                        var pk = currentWallet.readNodePubkey();
+                        vpNodePubkey.text = pk.length > 0 ? pk : qsTr("Not found") + translationManager.emptyString;
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true; spacing: 10
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Cancel") + translationManager.emptyString
+                    onClicked: validatorPromotionDialog.close()
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Promote") + translationManager.emptyString; primary: true
+                    enabled: vpNodePubkey.text.trim().length === 64
+                    onClicked: {
+                        if (!currentWallet) return;
+                        validatorPromotionDialog.close();
+                        var extraHex = currentWallet.buildValidatorPromotionExtra(myNodeId, vpNodePubkey.text.trim());
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build promotion tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionAsync(extraHex);
+                        vpNodePubkey.text = "";
+                    }
                 }
             }
         }
@@ -1323,9 +1949,23 @@ Rectangle {
             dashPenalties.text = entries.length > 0 ? String(entries.length) : "0";
         }
 
-        onEligibleNodesReceived: {}
-        onBanNodeReceived: {}
-        onUnbanNodeReceived: {}
+        onEligibleNodesReceived: {
+            var nodes = result.nodes || [];
+            var msg = qsTr("Eligible nodes: ") + (result.total_count || nodes.length);
+            appWindow.showStatusMessage(msg, 3);
+        }
+        onBanNodeReceived: {
+            mevatrustTxResultDialog.txSuccess = result.success === true || result.success === "true";
+            mevatrustTxResultDialog.txId = "";
+            mevatrustTxResultDialog.txError = result.status || "";
+            mevatrustTxResultDialog.open();
+        }
+        onUnbanNodeReceived: {
+            mevatrustTxResultDialog.txSuccess = result.success === true || result.success === "true";
+            mevatrustTxResultDialog.txId = "";
+            mevatrustTxResultDialog.txError = result.status || "";
+            mevatrustTxResultDialog.open();
+        }
 
         // Wallet tx result
         onErrorOccurred: {

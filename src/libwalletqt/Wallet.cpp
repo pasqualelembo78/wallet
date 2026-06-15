@@ -29,6 +29,7 @@
 #include "Wallet.h"
 
 #include <chrono>
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -1312,8 +1313,9 @@ void Wallet::submitMevatrustTransactionAsync(const QString &extraHex, quint64 am
 namespace {
     bool read_node_pubkey_internal(std::string& node_pk_hex) {
         const char* h = std::getenv("HOME");
+        std::string base = std::string(h ? h : "/root") + "/.mevacoin/mevatrust";
         std::vector<std::string> paths = {
-            std::string(h ? h : "") + "/.mevacoin/mevatrust/node_signing_key",
+            base + "/node_signing_key",
             "/root/.mevacoin/mevatrust/node_signing_key",
         };
         for (const auto& kp : paths) {
@@ -1680,13 +1682,168 @@ QString Wallet::buildValidatorPromotionExtra(const QString &nodeIdHex, const QSt
     return QString::fromStdString(extra_to_hex(extra));
 }
 
+// ── Store tx building ───────────────────────────────────────────────────
+
+QString Wallet::buildStoreCreateExtra(const QString &name, const QString &description,
+                                       const QString &url)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op          = cryptonote::tx_extra_mevatrust_store::STORE_CREATE;
+    op.store_id    = crypto::hash{};
+    op.name        = name.toStdString();
+    op.description = description.toStdString();
+    op.url         = url.toStdString();
+    op.owner_pubkey = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildStoreUpdateExtra(const QString &storeIdHex, const QString &name,
+                                       const QString &description, const QString &url)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op          = cryptonote::tx_extra_mevatrust_store::STORE_UPDATE;
+    op.store_id    = sid;
+    op.name        = name.toStdString();
+    op.description = description.toStdString();
+    op.url         = url.toStdString();
+    op.owner_pubkey = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildItemListExtra(const QString &storeIdHex, const QString &name,
+                                    const QString &description, quint64 price,
+                                    const QString &category, const QString &metadata)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op          = cryptonote::tx_extra_mevatrust_store::ITEM_LIST;
+    op.store_id    = sid;
+    op.name        = name.toStdString();
+    op.description = description.toStdString();
+    op.price       = price;
+    op.category    = category.toStdString();
+    op.metadata    = metadata.toStdString();
+    op.owner_pubkey = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildItemDelistExtra(const QString &storeIdHex, const QString &itemIdHex)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+    crypto::hash iid;
+    if (!epee::string_tools::hex_to_pod(itemIdHex.toStdString(), iid))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op          = cryptonote::tx_extra_mevatrust_store::ITEM_DELIST;
+    op.store_id    = sid;
+    op.item_id     = iid;
+    op.owner_pubkey = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildItemBuyExtra(const QString &storeIdHex, const QString &itemIdHex)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+    crypto::hash iid;
+    if (!epee::string_tools::hex_to_pod(itemIdHex.toStdString(), iid))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op           = cryptonote::tx_extra_mevatrust_store::ITEM_BUY;
+    op.store_id     = sid;
+    op.item_id      = iid;
+    op.buyer_pubkey = w_spk;
+    op.owner_pubkey = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
 void Wallet::saveNodeIdToFile(const QString &nodeIdHex) {
     const char* h = std::getenv("HOME");
     std::string dir = std::string(h ? h : "/root") + "/.mevacoin/mevatrust";
     std::string path = dir + "/node_id";
-    // Ensure directory exists
-    std::string mkdir_cmd = "mkdir -p " + dir;
-    system(mkdir_cmd.c_str());
+    // Ensure directory exists using std::filesystem
+    std::error_code ec;
+    if (!std::filesystem::exists(dir, ec)) {
+        std::filesystem::create_directories(dir, ec);
+    }
     std::ofstream f(path);
     if (f.is_open()) {
         f << nodeIdHex.toStdString();
