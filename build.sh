@@ -106,6 +106,43 @@ CC=aarch64-linux-android31-clang CFLAGS="-fPIC" ./configure --prefix=/opt/androi
 make -j${THREADS} && make -j${THREADS} install
 
 cd /mevacoin-gui
+# ── Patch mevatrust_tx_parser.cpp: auto& out → template<typename T> ... T& out ──
+python3 << 'PATCH_EOF'
+import os
+path = '/mevacoin-gui/mevacoin/src/cryptonote_core/mevatrust/mevatrust_tx_parser.cpp'
+with open(path) as f:
+    content = f.read()
+old = 'static bool parse_tagged(const transaction& tx, uint8_t tag, const std::string& name, auto& out) {'
+new = 'template<typename T>\nstatic bool parse_tagged(const transaction& tx, uint8_t tag, const std::string& name, T& out) {'
+if old in content:
+    content = content.replace(old, new)
+    with open(path, 'w') as f:
+        f.write(content)
+    print('  PATCH: mevatrust_tx_parser.cpp — auto& out → template<T>')
+else:
+    print('  OK: mevatrust_tx_parser.cpp già patchato o pattern diverso')
+PATCH_EOF
+# ── Fix namespace Mevacoin → Monero nella GUI ──
+python3 << 'NS_EOF'
+import glob
+src = '/mevacoin-gui/src'
+count = 0
+for ext in ('*.h', '*.cpp'):
+    for fpath in glob.glob(f'{src}/**/{ext}', recursive=True):
+        with open(fpath) as f:
+            content = f.read()
+        original = content
+        content = content.replace('Mevacoin::', 'Monero::')
+        content = content.replace('namespace Mevacoin {', 'namespace Monero {')
+        if content != original:
+            with open(fpath, 'w') as f:
+                f.write(content)
+            count += 1
+if count:
+    print(f'  PATCH: {count} file GUI — Mevacoin:: → Monero::')
+else:
+    print('  OK: namespace GUI già corretto')
+NS_EOF
 mkdir -p build/Android/release && cd build/Android/release
 cmake \
     -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_ROOT}/build/cmake/android.toolchain.cmake \

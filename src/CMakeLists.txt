@@ -22,6 +22,8 @@ file(GLOB SOURCE_FILES
     "libwalletqt/Subaddress.cpp"
     "libwalletqt/SubaddressAccount.cpp"
     "libwalletqt/UnsignedTransaction.cpp"
+    "libwalletqt/MevatrustManager.h"
+    "libwalletqt/MevatrustManager.cpp"
     "libwalletqt/WalletManager.h"
     "libwalletqt/Wallet.h"
     "libwalletqt/PassphraseHelper.h"

@@ -58,7 +58,7 @@ class PassphraseHelper {
 public:
     PassphraseHelper(PassprasePrompter * prompter=nullptr): m_prompter(prompter) {};
     PassphraseHelper(const PassphraseHelper & h): PassphraseHelper(h.m_prompter) {};
-    Mevacoin::optional<std::string> onDevicePassphraseRequest(bool & on_device);
+    Monero::optional<std::string> onDevicePassphraseRequest(bool & on_device);
     void onPassphraseEntered(const QString &passphrase, bool enter_on_device, bool entry_abort);
 
 private:

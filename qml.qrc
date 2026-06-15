@@ -24,6 +24,7 @@
         <file>pages/Dashboard.qml</file>
         <file>pages/DashboardTile.qml</file>
         <file>pages/Privacy.qml</file>
+        <file>pages/Mevatrust.qml</file>
         <file>pages/Advanced.qml</file>
         <file>pages/Transfer.qml</file>
         <file>pages/History.qml</file>
@@ -275,6 +276,7 @@
         <file>images/arrow-right-in-circle-outline-medium-white.svg</file>
         <file>images/tails-grey.png</file>
         <file>components/AdvancedOptionsItem.qml</file>
+        <file>components/BadgeCard.qml</file>
         <file>images/busy-indicator.png</file>
         <file>images/busy-indicator@2x.png</file>
         <file>images/success.png</file>

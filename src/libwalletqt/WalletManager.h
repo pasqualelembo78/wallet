@@ -41,7 +41,7 @@
 #include "PassphraseHelper.h"
 
 class Wallet;
-namespace Mevacoin {
+namespace Monero {
 struct WalletManager;
 }
 
@@ -56,14 +56,14 @@ public:
     ~WalletManager();
 
     enum LogLevel {
-        LogLevel_Silent = Mevacoin::WalletManagerFactory::LogLevel_Silent,
-        LogLevel_0 = Mevacoin::WalletManagerFactory::LogLevel_0,
-        LogLevel_1 = Mevacoin::WalletManagerFactory::LogLevel_1,
-        LogLevel_2 = Mevacoin::WalletManagerFactory::LogLevel_2,
-        LogLevel_3 = Mevacoin::WalletManagerFactory::LogLevel_3,
-        LogLevel_4 = Mevacoin::WalletManagerFactory::LogLevel_4,
-        LogLevel_Min = Mevacoin::WalletManagerFactory::LogLevel_Min,
-        LogLevel_Max = Mevacoin::WalletManagerFactory::LogLevel_Max,
+        LogLevel_Silent = Monero::WalletManagerFactory::LogLevel_Silent,
+        LogLevel_0 = Monero::WalletManagerFactory::LogLevel_0,
+        LogLevel_1 = Monero::WalletManagerFactory::LogLevel_1,
+        LogLevel_2 = Monero::WalletManagerFactory::LogLevel_2,
+        LogLevel_3 = Monero::WalletManagerFactory::LogLevel_3,
+        LogLevel_4 = Monero::WalletManagerFactory::LogLevel_4,
+        LogLevel_Min = Monero::WalletManagerFactory::LogLevel_Min,
+        LogLevel_Max = Monero::WalletManagerFactory::LogLevel_Max,
     };
 
     // wizard: createWallet path;
@@ -221,7 +221,7 @@ private:
     bool isMining() const;
 
     static WalletManager * m_instance;
-    Mevacoin::WalletManager * m_pimpl;
+    Monero::WalletManager * m_pimpl;
     mutable QMutex m_mutex;
     QPointer<Wallet> m_currentWallet;
     PassphraseReceiver * m_passphraseReceiver;

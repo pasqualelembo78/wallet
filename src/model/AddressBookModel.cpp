@@ -56,7 +56,7 @@ QVariant AddressBookModel::data(const QModelIndex &index, int role) const
 {
     QVariant result;
 
-    bool found = m_addressBook->getRow(index.row(), [&result, &role](const Mevacoin::AddressBookRow &row) {
+    bool found = m_addressBook->getRow(index.row(), [&result, &role](const Monero::AddressBookRow &row) {
         switch (role) {
         case AddressBookAddressRole:
             result = QString::fromStdString(row.getAddress());

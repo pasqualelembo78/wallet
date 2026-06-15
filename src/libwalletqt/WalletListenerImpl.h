@@ -34,7 +34,7 @@
 
 class Wallet;
 
-class WalletListenerImpl : public Mevacoin::WalletListener, public PassphraseReceiver
+class WalletListenerImpl : public Monero::WalletListener, public PassphraseReceiver
 {
 public:
     WalletListenerImpl(Wallet * w);
@@ -58,7 +58,7 @@ public:
 
     virtual void onPassphraseEntered(const QString &passphrase, bool enter_on_device, bool entry_abort) override;
 
-    virtual Mevacoin::optional<std::string> onDevicePassphraseRequest(bool & on_device) override;
+    virtual Monero::optional<std::string> onDevicePassphraseRequest(bool & on_device) override;
 
 private:
     Wallet * m_wallet;

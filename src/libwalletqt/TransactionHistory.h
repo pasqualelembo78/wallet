@@ -36,7 +36,7 @@
 #include <QReadWriteLock>
 #include <QDateTime>
 
-namespace Mevacoin {
+namespace Monero {
 struct TransactionHistory;
 }
 
@@ -72,12 +72,12 @@ public slots:
 
 
 private:
-    explicit TransactionHistory(Mevacoin::TransactionHistory * pimpl, QObject *parent = 0);
+    explicit TransactionHistory(Monero::TransactionHistory * pimpl, QObject *parent = 0);
 
 private:
     friend class Wallet;
     mutable QReadWriteLock m_lock;
-    Mevacoin::TransactionHistory * m_pimpl;
+    Monero::TransactionHistory * m_pimpl;
     mutable QList<TransactionInfo*> m_tinfo;
     mutable QDateTime   m_firstDateTime;
     mutable QDateTime   m_lastDateTime;

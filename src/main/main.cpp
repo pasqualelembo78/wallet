@@ -55,6 +55,7 @@
 #include "model/TransactionHistoryModel.h"
 #include "model/TransactionHistorySortFilterModel.h"
 #include "AddressBook.h"
+#include "MevatrustManager.h"
 #include "model/AddressBookModel.h"
 #include "Subaddress.h"
 #include "model/SubaddressModel.h"
@@ -298,7 +299,7 @@ Verify update binary using 'shasum'-compatible (SHA256 algo) output signed by tw
     parser.process(app);
 
     qWarning() << "MEVA_DEBUG [4/8] Calling Utils::onStartup...";
-    Mevacoin::Utils::onStartup();
+    Monero::Utils::onStartup();
     qWarning() << "MEVA_DEBUG [5/8] Utils::onStartup OK";
 
     qWarning() << "MEVA_DEBUG [6/8] Creating Logger...";
@@ -309,8 +310,8 @@ Verify update binary using 'shasum'-compatible (SHA256 algo) output signed by tw
     // qWarning is not shown here unless MEVACOIN_LOG_LEVEL env var is set
     bool logLevelOk;
     int logLevel = qEnvironmentVariableIntValue("MEVACOIN_LOG_LEVEL", &logLevelOk);
-    if (logLevelOk && logLevel >= 0 && logLevel <= Mevacoin::WalletManagerFactory::LogLevel_Max){
-        Mevacoin::WalletManagerFactory::setLogLevel(logLevel);
+    if (logLevelOk && logLevel >= 0 && logLevel <= Monero::WalletManagerFactory::LogLevel_Max){
+        Monero::WalletManagerFactory::setLogLevel(logLevel);
     }
 
     if (parser.isSet(verifyUpdateOption))
@@ -391,6 +392,8 @@ Verify update binary using 'shasum'-compatible (SHA256 algo) output signed by tw
     qmlRegisterType<Network>("mevacoinComponents.Network", 1, 0, "Network");
     qmlRegisterType<WalletKeysFilesModel>("mevacoinComponents.WalletKeysFilesModel", 1, 0, "WalletKeysFilesModel");
     qmlRegisterType<WalletManager>("mevacoinComponents.WalletManager", 1, 0, "WalletManager");
+
+        qmlRegisterType<MevatrustManager>("mevacoinComponents.MevatrustManager", 1, 0, "MevatrustManager");
 
     // Temporary Qt.labs.settings replacement
     qmlRegisterType<MevaSettings>("mevacoinComponents.Settings", 1, 0, "MevaSettings");
@@ -487,6 +490,11 @@ Verify update binary using 'shasum'-compatible (SHA256 algo) output signed by tw
     DaemonManager daemonManager;
     qWarning() << "MEVA_DEBUG DaemonManager OK";
     engine.rootContext()->setContextProperty("daemonManager", &daemonManager);
+
+    qWarning() << "MEVA_DEBUG Creating MevatrustManager...";
+    MevatrustManager mevatrustManager;
+    qWarning() << "MEVA_DEBUG MevatrustManager OK";
+    engine.rootContext()->setContextProperty("mevatrustManager", &mevatrustManager);
 #endif
 
     engine.rootContext()->setContextProperty("isWindows", isWindows);

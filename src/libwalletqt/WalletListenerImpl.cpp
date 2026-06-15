@@ -90,7 +90,7 @@ void WalletListenerImpl::onPassphraseEntered(const QString &passphrase, bool ent
     m_phelper.onPassphraseEntered(passphrase, enter_on_device, entry_abort);
 }
 
-Mevacoin::optional<std::string> WalletListenerImpl::onDevicePassphraseRequest(bool & on_device)
+Monero::optional<std::string> WalletListenerImpl::onDevicePassphraseRequest(bool & on_device)
 {
     qDebug() << __FUNCTION__;
     return m_phelper.onDevicePassphraseRequest(on_device);

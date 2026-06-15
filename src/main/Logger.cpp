@@ -100,11 +100,11 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context, const QSt
     const std::string msg = message.toStdString();
     switch(type)
     {
-        case QtDebugMsg: Mevacoin::Wallet::debug(cat, msg); break;
-        case QtInfoMsg: Mevacoin::Wallet::info(cat, msg); break;
-        case QtWarningMsg: Mevacoin::Wallet::warning(cat, msg); break;
-        case QtCriticalMsg: Mevacoin::Wallet::error(cat, msg); break;
-        case QtFatalMsg: Mevacoin::Wallet::error(cat, msg); break;
+        case QtDebugMsg: Monero::Wallet::debug(cat, msg); break;
+        case QtInfoMsg: Monero::Wallet::info(cat, msg); break;
+        case QtWarningMsg: Monero::Wallet::warning(cat, msg); break;
+        case QtCriticalMsg: Monero::Wallet::error(cat, msg); break;
+        case QtFatalMsg: Monero::Wallet::error(cat, msg); break;
     }
 }
 
@@ -114,7 +114,7 @@ Logger::Logger(QCoreApplication &parent, QString userDefinedLogFilePath)
     , m_userDefinedLogFilePath(std::move(userDefinedLogFilePath))
 {
     // FIX: non installare messageHandler qui — Wallet::init() non è ancora stato
-    // chiamato, e messageHandler chiama Mevacoin::Wallet::warning() che crasha
+    // chiamato, e messageHandler chiama Monero::Wallet::warning() che crasha
     // senza init. Il messageHandler verrà installato in resetLogFilePath().
     try {
         el::Configurations c;
@@ -131,9 +131,9 @@ Logger::Logger(QCoreApplication &parent, QString userDefinedLogFilePath)
 void Logger::resetLogFilePath(bool portable)
 {
     m_logFilePath = QDir::toNativeSeparators(getLogPath(m_userDefinedLogFilePath, portable));
-    Mevacoin::Wallet::init(m_applicationFilePath.c_str(), "mevacoin-wallet-gui", m_logFilePath.toStdString(), true);
+    Monero::Wallet::init(m_applicationFilePath.c_str(), "mevacoin-wallet-gui", m_logFilePath.toStdString(), true);
     // FIX: installa messageHandler DOPO Wallet::init() — ora è safe usare
-    // Mevacoin::Wallet::warning/debug/info/error nel handler
+    // Monero::Wallet::warning/debug/info/error nel handler
     qInstallMessageHandler(messageHandler);
     qWarning() << "Logging to" << m_logFilePath;
     emit logFilePathChanged();

@@ -62,6 +62,7 @@ Rectangle {
     signal settingsClicked()
     signal addressBookClicked()
     signal accountClicked()
+    signal mevatrustClicked()
 
     function selectItem(pos) {
         menuColumn.previousButton.checked = false
@@ -72,6 +73,7 @@ Rectangle {
         else if(pos === "Settings") menuColumn.previousButton = settingsButton
         else if(pos === "Advanced") menuColumn.previousButton = advancedButton
         else if(pos === "Account") menuColumn.previousButton = accountButton
+        else if(pos === "Mevatrust") menuColumn.previousButton = mevatrustButton
         menuColumn.previousButton.checked = true
     }
 
@@ -390,6 +392,27 @@ Rectangle {
 
             MevaCoinComponents.MenuButtonDivider {
                 visible: accountButton.present
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 20
+            }
+
+            // ------------- Mevatrust tab ---------------
+            MevaCoinComponents.MenuButton {
+                id: mevatrustButton
+                anchors.left: parent.left
+                anchors.right: parent.right
+                text: qsTr("MevaTrust") + translationManager.emptyString
+                symbol: (isMac ? "\u2303" : qsTr("Ctrl+")) + "M" + translationManager.emptyString
+                onClicked: {
+                    parent.previousButton.checked = false
+                    parent.previousButton = mevatrustButton
+                    panel.mevatrustClicked()
+                }
+            }
+
+            MevaCoinComponents.MenuButtonDivider {
+                visible: mevatrustButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.leftMargin: 20

@@ -319,17 +319,17 @@ void Wallet::initAsync(
 
 bool Wallet::isHwBacked() const
 {
-    return m_walletImpl->getDeviceType() != Mevacoin::Wallet::Device_Software;
+    return m_walletImpl->getDeviceType() != Monero::Wallet::Device_Software;
 }
 
 bool Wallet::isLedger() const
 {
-    return m_walletImpl->getDeviceType() == Mevacoin::Wallet::Device_Ledger;
+    return m_walletImpl->getDeviceType() == Monero::Wallet::Device_Ledger;
 }
 
 bool Wallet::isTrezor() const
 {
-    return m_walletImpl->getDeviceType() == Mevacoin::Wallet::Device_Trezor;
+    return m_walletImpl->getDeviceType() == Monero::Wallet::Device_Trezor;
 }
 
 //! create a view only wallet
@@ -538,9 +538,9 @@ void Wallet::setupBackgroundSync(const Wallet::BackgroundSyncType background_syn
     // run inside scheduler because of lag when stopping/starting refresh
     m_scheduler.run([this, refreshEnabled, background_sync_type, &wallet_password] {
         m_walletImpl->setupBackgroundSync(
-            static_cast<Mevacoin::Wallet::BackgroundSyncType>(background_sync_type),
+            static_cast<Monero::Wallet::BackgroundSyncType>(background_sync_type),
             wallet_password.toStdString(),
-            Mevacoin::optional<std::string>());
+            Monero::optional<std::string>());
         if (refreshEnabled)
             startRefresh();
         emit backgroundSyncSetup();
@@ -641,15 +641,15 @@ PendingTransaction *Wallet::createTransaction(
     }
     std::vector<uint64_t> amounts;
     for (const auto &amount : destinationAmounts) {
-        amounts.push_back(Mevacoin::Wallet::amountFromString(amount.toStdString()));
+        amounts.push_back(Monero::Wallet::amountFromString(amount.toStdString()));
     }
     std::set<uint32_t> subaddr_indices;
-    Mevacoin::PendingTransaction *ptImpl = m_walletImpl->createTransactionMultDest(
+    Monero::PendingTransaction *ptImpl = m_walletImpl->createTransactionMultDest(
         destinations,
         payment_id.toStdString(),
         amounts,
         mixin_count,
-        static_cast<Mevacoin::PendingTransaction::Priority>(priority),
+        static_cast<Monero::PendingTransaction::Priority>(priority),
         currentSubaddressAccount(),
         subaddr_indices);
     PendingTransaction *result = new PendingTransaction(ptImpl, 0);
@@ -673,9 +673,9 @@ PendingTransaction *Wallet::createTransactionAll(const QString &dst_addr, const 
                                                  quint32 mixin_count, PendingTransaction::Priority priority)
 {
     std::set<uint32_t> subaddr_indices;
-    Mevacoin::PendingTransaction * ptImpl = m_walletImpl->createTransaction(
-                dst_addr.toStdString(), payment_id.toStdString(), Mevacoin::optional<uint64_t>(), mixin_count,
-                static_cast<Mevacoin::PendingTransaction::Priority>(priority), currentSubaddressAccount(), subaddr_indices);
+    Monero::PendingTransaction * ptImpl = m_walletImpl->createTransaction(
+                dst_addr.toStdString(), payment_id.toStdString(), Monero::optional<uint64_t>(), mixin_count,
+                static_cast<Monero::PendingTransaction::Priority>(priority), currentSubaddressAccount(), subaddr_indices);
     PendingTransaction * result = new PendingTransaction(ptImpl, this);
     return result;
 }
@@ -692,7 +692,7 @@ void Wallet::createTransactionAllAsync(const QString &dst_addr, const QString &p
 
 PendingTransaction *Wallet::createSweepUnmixableTransaction()
 {
-    Mevacoin::PendingTransaction * ptImpl = m_walletImpl->createSweepUnmixableTransaction();
+    Monero::PendingTransaction * ptImpl = m_walletImpl->createSweepUnmixableTransaction();
     PendingTransaction * result = new PendingTransaction(ptImpl, this);
     return result;
 }
@@ -708,7 +708,7 @@ void Wallet::createSweepUnmixableTransactionAsync()
 UnsignedTransaction * Wallet::loadTxFile(const QString &fileName)
 {
     qDebug() << "Trying to sign " << fileName;
-    Mevacoin::UnsignedTransaction * ptImpl = m_walletImpl->loadUnsignedTx(fileName.toStdString());
+    Monero::UnsignedTransaction * ptImpl = m_walletImpl->loadUnsignedTx(fileName.toStdString());
     UnsignedTransaction * result = new UnsignedTransaction(ptImpl, m_walletImpl, this);
     return result;
 }
@@ -763,8 +763,8 @@ void Wallet::estimateTransactionFeeAsync(
 
             const uint64_t fee = m_walletImpl->estimateTransactionFee(
                 destinations,
-                static_cast<Mevacoin::PendingTransaction::Priority>(priority));
-            return QJSValueList({QString::fromStdString(Mevacoin::Wallet::displayAmount(fee))});
+                static_cast<Monero::PendingTransaction::Priority>(priority));
+            return QJSValueList({QString::fromStdString(Monero::Wallet::displayAmount(fee))});
         },
         callback);
 }
@@ -834,7 +834,7 @@ SubaddressAccountModel *Wallet::subaddressAccountModel() const
 
 QString Wallet::generatePaymentId() const
 {
-    return QString::fromStdString(Mevacoin::Wallet::genPaymentId());
+    return QString::fromStdString(Monero::Wallet::genPaymentId());
 }
 
 QString Wallet::integratedAddress(const QString &paymentId) const
@@ -1158,7 +1158,7 @@ void Wallet::onPassphraseEntered(const QString &passphrase, bool enter_on_device
     }
 }
 
-Wallet::Wallet(Mevacoin::Wallet *w, QObject *parent)
+Wallet::Wallet(Monero::Wallet *w, QObject *parent)
     : QObject(parent)
     , m_walletImpl(w)
     , m_history(new TransactionHistory(m_walletImpl->history(), this))
@@ -1206,7 +1206,7 @@ Wallet::~Wallet()
     m_walletImpl->stop();
     m_scheduler.shutdownWaitForFinished();
 
-    //Mevacoin::WalletManagerFactory::getWalletManager()->closeWallet(m_walletImpl);
+    //Monero::WalletManagerFactory::getWalletManager()->closeWallet(m_walletImpl);
     if(status() == Status_Critical)
         qDebug("Not storing wallet cache");
     else if( m_walletImpl->store(""))
@@ -1257,9 +1257,9 @@ PendingTransaction* Wallet::createDocumentHashTransaction(const QString &documen
     if (hb.size() != 32) return nullptr;
     std::string own = m_walletImpl->address();
     std::set<uint32_t> si;
-    Mevacoin::optional<uint64_t> amt(1);
+    Monero::optional<uint64_t> amt(1);
     auto *pt = m_walletImpl->createTransaction(own, "", amt, 0,
-        static_cast<Mevacoin::PendingTransaction::Priority>(Mevacoin::PendingTransaction::Priority_Default),
+        static_cast<Monero::PendingTransaction::Priority>(Monero::PendingTransaction::Priority_Default),
         currentSubaddressAccount(), si);
     if (!pt) return nullptr;
     return new PendingTransaction(pt, this);

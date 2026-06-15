@@ -48,9 +48,9 @@ class UnsignedTransaction : public QObject
 
 public:
     enum Status {
-        Status_Ok       = Mevacoin::UnsignedTransaction::Status_Ok,
-        Status_Error    = Mevacoin::UnsignedTransaction::Status_Error,
-        Status_Critical    = Mevacoin::UnsignedTransaction::Status_Critical
+        Status_Ok       = Monero::UnsignedTransaction::Status_Ok,
+        Status_Error    = Monero::UnsignedTransaction::Status_Error,
+        Status_Critical    = Monero::UnsignedTransaction::Status_Critical
     };
     Q_ENUM(Status)
 
@@ -68,13 +68,13 @@ public:
     Q_INVOKABLE void setFilename(const QString &fileName);
 
 private:
-    explicit UnsignedTransaction(Mevacoin::UnsignedTransaction * pt, Mevacoin::Wallet *walletImpl, QObject *parent = 0);
+    explicit UnsignedTransaction(Monero::UnsignedTransaction * pt, Monero::Wallet *walletImpl, QObject *parent = 0);
     ~UnsignedTransaction();
 private:
     friend class Wallet;
-    Mevacoin::UnsignedTransaction * m_pimpl;
+    Monero::UnsignedTransaction * m_pimpl;
     QString m_fileName;
-    Mevacoin::Wallet * m_walletImpl;
+    Monero::Wallet * m_walletImpl;
 };
 
 #endif // UNSIGNEDTRANSACTION_H

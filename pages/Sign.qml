@@ -254,6 +254,25 @@ Rectangle {
                 }
 
                 MevaCoinComponents.StandardButton {
+                    id: copySignatureButton
+                    text: qsTr("Copy Signature") + translationManager.emptyString
+                    enabled: signSignatureLine.text !== ''
+                    small: true
+                    onClicked: {
+                        clipboard.setText(signSignatureLine.text)
+                        copySignatureButton.text = qsTr("Copied!") + translationManager.emptyString
+                        copyResetTimer.restart()
+                    }
+
+                    Timer {
+                        id: copyResetTimer
+                        interval: 2000
+                        repeat: false
+                        onTriggered: copySignatureButton.text = qsTr("Copy Signature") + translationManager.emptyString
+                    }
+                }
+
+                MevaCoinComponents.StandardButton {
                     id: signMessageButton
                     visible: messageMode
                     text: qsTr("Sign Message") + translationManager.emptyString

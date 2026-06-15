@@ -186,6 +186,7 @@ ApplicationWindow {
         else if(seq === "Ctrl+E") middlePanel.state = "Settings"
         else if(seq === "Ctrl+D") middlePanel.state = "Advanced"
         else if(seq === "Ctrl+T") middlePanel.state = "Account"
+        else if(seq === "Ctrl+M") middlePanel.state = "Mevatrust"
         else if(seq === "Ctrl+Tab" || seq === "Alt+Tab") {
             /*
             if(middlePanel.state === "Transfer") middlePanel.state = "Receive"
@@ -198,7 +199,8 @@ ApplicationWindow {
             else if(middlePanel.state === "Sign") middlePanel.state = "Settings"
             */
             if(middlePanel.state === "Settings") middlePanel.state = "Account"
-            else if(middlePanel.state === "Account") middlePanel.state = "Transfer"
+            else if(middlePanel.state === "Account") middlePanel.state = "Mevatrust"
+            else if(middlePanel.state === "Mevatrust") middlePanel.state = "Transfer"
             else if(middlePanel.state === "Transfer") middlePanel.state = "AddressBook"
             else if(middlePanel.state === "AddressBook") middlePanel.state = "Receive"
             else if(middlePanel.state === "Receive") middlePanel.state = "History"
@@ -220,7 +222,8 @@ ApplicationWindow {
             else if(middlePanel.state === "History") middlePanel.state = "Receive"
             else if(middlePanel.state === "Receive") middlePanel.state = "AddressBook"
             else if(middlePanel.state === "AddressBook") middlePanel.state = "Transfer"
-            else if(middlePanel.state === "Transfer") middlePanel.state = "Account"
+            else if(middlePanel.state === "Transfer") middlePanel.state = "Mevatrust"
+            else if(middlePanel.state === "Mevatrust") middlePanel.state = "Account"
             else if(middlePanel.state === "Account") middlePanel.state = "Settings"
         }
 
@@ -419,6 +422,7 @@ ApplicationWindow {
         }
 
         console.log("initializing with daemon address: ", currentDaemonAddress)
+        mevatrustManager.daemonAddress = currentDaemonAddress;
         currentWallet.initAsync(
             currentDaemonAddress,
             isTrustedDaemon(),
@@ -734,6 +738,7 @@ ApplicationWindow {
             persistentSettings.useRemoteNode = true;
             const remoteNode = remoteNodesModel.currentRemoteNode();
             currentDaemonAddress = remoteNode.address;
+            mevatrustManager.daemonAddress = currentDaemonAddress;
             currentWallet.setDaemonLogin(remoteNode.username, remoteNode.password);
             currentWallet.initAsync(
                 currentDaemonAddress,
@@ -763,6 +768,7 @@ ApplicationWindow {
 
         persistentSettings.useRemoteNode = false;
         currentDaemonAddress = localDaemonAddress
+        mevatrustManager.daemonAddress = currentDaemonAddress;
         currentWallet.setDaemonLogin("", "");
         currentWallet.initAsync(
             currentDaemonAddress,
@@ -1983,6 +1989,11 @@ ApplicationWindow {
                     middlePanel.state = "Account";
                     middlePanel.flickable.contentY = 0;
                     updateBalance();
+                }
+
+                onMevatrustClicked: {
+                    middlePanel.state = "Mevatrust";
+                    middlePanel.flickable.contentY = 0;
                 }
             }
 
