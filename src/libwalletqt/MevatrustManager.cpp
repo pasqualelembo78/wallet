@@ -180,3 +180,141 @@ void MevatrustManager::getNodeIncentiveHistory(const QString &nodeId, quint64 li
         emit rewardHistoryReceived(result);
     });
 }
+
+// ── Write RPC methods ─────────────────────────────────────────────────────
+
+void MevatrustManager::registerNode(const QString &publicKey, const QString &signature, const QString &address,
+                                     const QString &viewKeyHex, const QString &proofTxid,
+                                     quint32 proofOutputIndex, const QString &nodePublicKey)
+{
+    QJsonObject params;
+    params["public_key"] = publicKey;
+    params["signature"] = signature;
+    params["address"] = address;
+    if (!viewKeyHex.isEmpty()) params["view_key_hex"] = viewKeyHex;
+    if (!proofTxid.isEmpty()) params["proof_txid"] = proofTxid;
+    params["proof_output_index"] = (qint32)proofOutputIndex;
+    if (!nodePublicKey.isEmpty()) params["node_public_key"] = nodePublicKey;
+    rpcCall("register_node", params, [this](const QJsonObject &result) {
+        emit registerNodeReceived(result);
+    });
+}
+
+void MevatrustManager::unregisterNode(const QString &nodeId, const QString &address, const QString &signature)
+{
+    QJsonObject params;
+    params["node_id"] = nodeId;
+    params["address"] = address;
+    params["signature"] = signature;
+    rpcCall("unregister_node", params, [this](const QJsonObject &result) {
+        emit unregisterNodeReceived(result);
+    });
+}
+
+void MevatrustManager::circleCreate(const QString &name, const QString &adminPubkey)
+{
+    QJsonObject params;
+    params["name"] = name;
+    params["admin_pubkey"] = adminPubkey;
+    rpcCall("circle_create", params, [this](const QJsonObject &result) {
+        emit circleCreateReceived(result);
+    });
+}
+
+void MevatrustManager::circleInfo(const QString &circleId)
+{
+    QJsonObject params;
+    params["circle_id"] = circleId;
+    rpcCall("circle_info", params, [this](const QJsonObject &result) {
+        emit circleInfoReceived(result);
+    });
+}
+
+void MevatrustManager::circleList(const QString &walletPubkey)
+{
+    QJsonObject params;
+    params["wallet_pubkey"] = walletPubkey;
+    rpcCall("circle_list", params, [this](const QJsonObject &result) {
+        emit circleListReceived(result);
+    });
+}
+
+void MevatrustManager::circleJoin(const QString &circleId, const QString &memberPubkey, const QString &callerPubkey)
+{
+    QJsonObject params;
+    params["circle_id"] = circleId;
+    params["member_pubkey"] = memberPubkey;
+    params["caller_pubkey"] = callerPubkey;
+    rpcCall("circle_join", params, [this](const QJsonObject &result) {
+        emit circleJoinReceived(result);
+    });
+}
+
+void MevatrustManager::circleLeave(const QString &circleId, const QString &memberPubkey, const QString &callerPubkey)
+{
+    QJsonObject params;
+    params["circle_id"] = circleId;
+    params["member_pubkey"] = memberPubkey;
+    params["caller_pubkey"] = callerPubkey;
+    rpcCall("circle_leave", params, [this](const QJsonObject &result) {
+        emit circleLeaveReceived(result);
+    });
+}
+
+void MevatrustManager::circleChangeAdmin(const QString &circleId, const QString &newAdminPubkey, const QString &callerPubkey)
+{
+    QJsonObject params;
+    params["circle_id"] = circleId;
+    params["new_admin_pubkey"] = newAdminPubkey;
+    params["caller_pubkey"] = callerPubkey;
+    rpcCall("circle_change_admin", params, [this](const QJsonObject &result) {
+        emit circleChangeAdminReceived(result);
+    });
+}
+
+void MevatrustManager::circleDisband(const QString &circleId, const QString &callerPubkey)
+{
+    QJsonObject params;
+    params["circle_id"] = circleId;
+    params["caller_pubkey"] = callerPubkey;
+    rpcCall("circle_disband", params, [this](const QJsonObject &result) {
+        emit circleDisbandReceived(result);
+    });
+}
+
+void MevatrustManager::getPenaltyHistory(const QString &nodeId)
+{
+    QJsonObject params;
+    params["node_id"] = nodeId;
+    rpcCall("get_penalty_history", params, [this](const QJsonObject &result) {
+        emit penaltyHistoryReceived(result);
+    });
+}
+
+void MevatrustManager::getEligibleNodes()
+{
+    rpcCall("get_eligible_nodes", QJsonObject(), [this](const QJsonObject &result) {
+        emit eligibleNodesReceived(result);
+    });
+}
+
+void MevatrustManager::banNode(const QString &nodeId, const QString &reason, const QString &callerPubkey)
+{
+    QJsonObject params;
+    params["node_id"] = nodeId;
+    params["reason"] = reason;
+    params["caller_pubkey"] = callerPubkey;
+    rpcCall("ban_node", params, [this](const QJsonObject &result) {
+        emit banNodeReceived(result);
+    });
+}
+
+void MevatrustManager::unbanNode(const QString &nodeId, const QString &callerPubkey)
+{
+    QJsonObject params;
+    params["node_id"] = nodeId;
+    params["caller_pubkey"] = callerPubkey;
+    rpcCall("unban_node", params, [this](const QJsonObject &result) {
+        emit unbanNodeReceived(result);
+    });
+}

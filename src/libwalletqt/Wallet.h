@@ -267,6 +267,43 @@ public:
     Q_INVOKABLE void createDocumentHashTransactionAsync(const QString &documentHash);
     PendingTransaction* createDocumentHashTransaction(const QString &documentHash);
 
+    //! Create and commit a MevaTrust transaction with custom tx_extra blob (hex-encoded)
+    Q_INVOKABLE void submitMevatrustTransactionAsync(const QString &extraHex, quint64 amount = 1000000000ULL);
+
+    //! MevaTrust transaction building methods
+    //! Read node_signing_key file and derive node public key (hex)
+    Q_INVOKABLE QString readNodePubkey();
+    //! Compute node_id = H(wallet_pubkey || node_pubkey || timestamp)
+    Q_INVOKABLE QString computeNodeId(const QString &nodePubkeyHex);
+    //! Build registration tx_extra blob (hex), sets lastNodeId
+    Q_INVOKABLE QString buildRegistrationExtra(const QString &walletAddress, uint32_t port = 0);
+    //! Build deregistration tx_extra blob (hex)
+    Q_INVOKABLE QString buildDeregisterExtra(const QString &nodeIdHex);
+    //! Build circle CREATE tx_extra blob (hex)
+    Q_INVOKABLE QString buildCircleCreateExtra(const QString &circleName);
+    //! Build circle JOIN tx_extra blob (hex)
+    Q_INVOKABLE QString buildCircleJoinExtra(const QString &circleIdHex, const QString &memberPubkeyHex);
+    //! Build circle LEAVE tx_extra blob (hex); if memberPubkeyHex empty, leaves self
+    Q_INVOKABLE QString buildCircleLeaveExtra(const QString &circleIdHex, const QString &memberPubkeyHex = "");
+    //! Build circle CHANGE_ADMIN tx_extra blob (hex)
+    Q_INVOKABLE QString buildCircleChangeAdminExtra(const QString &circleIdHex, const QString &newAdminPubkeyHex);
+    //! Build circle DISBAND tx_extra blob (hex)
+    Q_INVOKABLE QString buildCircleDisbandExtra(const QString &circleIdHex);
+    //! Build penalty BAN tx_extra blob (hex)
+    Q_INVOKABLE QString buildBanExtra(const QString &nodeIdHex, const QString &reason = "Violation of terms");
+    //! Build penalty UNBAN tx_extra blob (hex)
+    Q_INVOKABLE QString buildUnbanExtra(const QString &nodeIdHex);
+    //! Build validator promotion tx_extra blob (hex)
+    Q_INVOKABLE QString buildValidatorPromotionExtra(const QString &nodeIdHex, const QString &nodePubkeyHex);
+    //! Save node_id to ~/.mevacoin/mevatrust/node_id
+    Q_INVOKABLE void saveNodeIdToFile(const QString &nodeIdHex);
+    //! Read saved node_id from ~/.mevacoin/mevatrust/node_id
+    Q_INVOKABLE QString readSavedNodeId();
+
+    //! Last computed node_id (set after buildRegistrationExtra / computeNodeId)
+    Q_PROPERTY(QString lastNodeId READ lastNodeId NOTIFY lastNodeIdChanged)
+    QString lastNodeId() const { return m_lastNodeId; }
+
     //! Create document hash timestamping transaction
 
     //! Sign a transfer from file
@@ -416,12 +453,16 @@ signals:
         const QString &paymentId,
         quint32 mixinCount);
 
+    // emitted when mevatrust transaction is created and committed
+    void mevatrustTransactionCompleted(bool success, const QString &txid, const QString &error);
+
 
     void connectionStatusChanged(int status) const;
     void currentSubaddressAccountChanged() const;
     void disconnectedChanged() const;
     void proxyAddressChanged() const;
     void refreshingChanged() const;
+    void lastNodeIdChanged();
 
 private:
     Wallet(QObject * parent = nullptr);
@@ -504,6 +545,7 @@ private:
     std::atomic<bool> m_refreshing;
     WalletListenerImpl *m_walletListener;
     FutureScheduler m_scheduler;
+    QString m_lastNodeId;
 };
 
 

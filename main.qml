@@ -1572,6 +1572,8 @@ ApplicationWindow {
         property bool savePasswordOnDevice: false  // user opted to save password locally
         property string savedWalletPassword: ""    // stored password (plain, device-local)
 
+        property string mevatrust_node_id: ""      // saved My Node ID for MevaTrust
+
         property bool fiatPriceEnabled: false
         property bool fiatPriceToggle: false
         property string fiatPriceProvider: "kraken"
@@ -2305,6 +2307,10 @@ ApplicationWindow {
                     Rectangle { width: parent.width; height: 52; color: middlePanel.state === "Advanced" ? "#20FFFFFF" : "transparent"
                         Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.cogs; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.state === "Advanced" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("Advanced") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.state === "Advanced" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }
                         MouseArea { anchors.fill: parent; onClicked: mobileNavigate("Advanced") } }
+                    // MevaTrust
+                    Rectangle { width: parent.width; height: 52; color: middlePanel.state === "Mevatrust" ? "#20FFFFFF" : "transparent"
+                        Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.shieldAlt; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.state === "Mevatrust" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("MevaTrust") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.state === "Mevatrust" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }
+                        MouseArea { anchors.fill: parent; onClicked: mobileNavigate("Mevatrust") } }
                     // Settings
                     Rectangle { width: parent.width; height: 52; color: middlePanel.state === "Settings" ? "#20FFFFFF" : "transparent"
                         Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.cog; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("Settings") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }

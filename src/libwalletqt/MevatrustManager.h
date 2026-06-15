@@ -32,6 +32,22 @@ public:
     Q_INVOKABLE void getTopNodes(quint32 count = 20);
     Q_INVOKABLE void getBadgeRequirements();
     Q_INVOKABLE void getNodeIncentiveHistory(const QString &nodeId, quint64 limit = 50, quint64 offset = 0);
+    // Write RPC methods
+    Q_INVOKABLE void registerNode(const QString &publicKey, const QString &signature, const QString &address,
+                                   const QString &viewKeyHex = "", const QString &proofTxid = "",
+                                   quint32 proofOutputIndex = 0, const QString &nodePublicKey = "");
+    Q_INVOKABLE void unregisterNode(const QString &nodeId, const QString &address, const QString &signature);
+    Q_INVOKABLE void circleCreate(const QString &name, const QString &adminPubkey);
+    Q_INVOKABLE void circleInfo(const QString &circleId);
+    Q_INVOKABLE void circleList(const QString &walletPubkey = "");
+    Q_INVOKABLE void circleJoin(const QString &circleId, const QString &memberPubkey, const QString &callerPubkey);
+    Q_INVOKABLE void circleLeave(const QString &circleId, const QString &memberPubkey, const QString &callerPubkey);
+    Q_INVOKABLE void circleChangeAdmin(const QString &circleId, const QString &newAdminPubkey, const QString &callerPubkey);
+    Q_INVOKABLE void circleDisband(const QString &circleId, const QString &callerPubkey);
+    Q_INVOKABLE void getPenaltyHistory(const QString &nodeId);
+    Q_INVOKABLE void getEligibleNodes();
+    Q_INVOKABLE void banNode(const QString &nodeId, const QString &reason, const QString &callerPubkey);
+    Q_INVOKABLE void unbanNode(const QString &nodeId, const QString &callerPubkey);
 
 signals:
     void daemonAddressChanged();
@@ -48,6 +64,20 @@ signals:
     void badgeRequirementsReceived(const QJsonObject &requirements);
     void lookupNodeByWalletReceived(const QJsonObject &result);
     void errorOccurred(const QString &error);
+    // Write RPC response signals
+    void registerNodeReceived(const QJsonObject &result);
+    void unregisterNodeReceived(const QJsonObject &result);
+    void circleCreateReceived(const QJsonObject &result);
+    void circleInfoReceived(const QJsonObject &result);
+    void circleListReceived(const QJsonObject &result);
+    void circleJoinReceived(const QJsonObject &result);
+    void circleLeaveReceived(const QJsonObject &result);
+    void circleChangeAdminReceived(const QJsonObject &result);
+    void circleDisbandReceived(const QJsonObject &result);
+    void penaltyHistoryReceived(const QJsonObject &result);
+    void eligibleNodesReceived(const QJsonObject &result);
+    void banNodeReceived(const QJsonObject &result);
+    void unbanNodeReceived(const QJsonObject &result);
 
 private:
     void rpcCall(const QString &method, const QJsonObject &params,

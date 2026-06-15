@@ -59,6 +59,10 @@
 
 #include "qt/ScopeGuard.h"
 
+#include "cryptonote_core/mevatrust/mevatrust_tx_parser.h"
+#include <fstream>
+#include <ctime>
+
 namespace {
     static const int DAEMON_BLOCKCHAIN_HEIGHT_CACHE_TTL_SECONDS = 5;
     static const int DAEMON_BLOCKCHAIN_TARGET_HEIGHT_CACHE_TTL_SECONDS = 30;
@@ -1271,4 +1275,431 @@ void Wallet::createDocumentHashTransactionAsync(const QString &documentHash)
         PendingTransaction *tx = createDocumentHashTransaction(documentHash);
         emit documentHashTransactionCreated(tx, documentHash);
     });
+}
+
+void Wallet::submitMevatrustTransactionAsync(const QString &extraHex, quint64 amount)
+{
+    m_scheduler.run([this, extraHex, amount] {
+        std::string extraStd = extraHex.toStdString();
+        Monero::optional<uint64_t> amt(amount);
+        Monero::PendingTransaction *pt = m_walletImpl->createTransactionWithExtra(
+            extraStd, amt, 0,
+            Monero::PendingTransaction::Priority_Low,
+            currentSubaddressAccount());
+        if (!pt || pt->status() != Monero::PendingTransaction::Status_Ok) {
+            QString err = pt ? QString::fromStdString(pt->errorString()) : "Failed to create transaction";
+            emit mevatrustTransactionCompleted(false, "", err);
+            if (pt) m_walletImpl->disposeTransaction(pt);
+            return;
+        }
+        // Commit the transaction
+        bool success = pt->commit();
+        QStringList txids;
+        if (success) {
+            auto txList = pt->txid();
+            for (const auto &txid : txList)
+                txids.append(QString::fromStdString(txid));
+        }
+        emit mevatrustTransactionCompleted(success,
+            txids.isEmpty() ? "" : txids.first(),
+            success ? "" : QString::fromStdString(pt->errorString()));
+        m_walletImpl->disposeTransaction(pt);
+    });
+}
+
+// ── MevaTrust Transaction Building ──────────────────────────────────────
+
+namespace {
+    bool read_node_pubkey_internal(std::string& node_pk_hex) {
+        const char* h = std::getenv("HOME");
+        std::vector<std::string> paths = {
+            std::string(h ? h : "") + "/.mevacoin/mevatrust/node_signing_key",
+            "/root/.mevacoin/mevatrust/node_signing_key",
+        };
+        for (const auto& kp : paths) {
+            std::ifstream kf(kp, std::ios::binary);
+            if (!kf.is_open()) continue;
+            unsigned char seed[32] = {};
+            kf.read(reinterpret_cast<char*>(seed), 32);
+            if (kf.gcount() != 32) continue;
+            kf.close();
+            crypto::secret_key node_sk;
+            memcpy(node_sk.data, seed, 32);
+            crypto::public_key node_pk;
+            crypto::secret_key_to_public_key(node_sk, node_pk);
+            node_pk_hex = epee::string_tools::pod_to_hex(node_pk);
+            return true;
+        }
+        return false;
+    }
+
+    std::string extra_to_hex(const std::vector<uint8_t>& extra) {
+        QByteArray bytes(reinterpret_cast<const char*>(extra.data()), extra.size());
+        return std::string(bytes.toHex().constData(), bytes.size() * 2);
+    }
+}
+
+QString Wallet::readNodePubkey() {
+    std::string pk_hex;
+    if (!read_node_pubkey_internal(pk_hex))
+        return {};
+    return QString::fromStdString(pk_hex);
+}
+
+QString Wallet::computeNodeId(const QString &nodePubkeyHex) {
+    crypto::public_key node_pk;
+    if (!epee::string_tools::hex_to_pod(nodePubkeyHex.toStdString(), node_pk))
+        return {};
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    const uint64_t now = static_cast<uint64_t>(std::time(nullptr));
+    std::string nid_input;
+    nid_input.append(reinterpret_cast<const char*>(&w_spk), sizeof(w_spk));
+    nid_input.append(reinterpret_cast<const char*>(&node_pk), sizeof(node_pk));
+    nid_input.append(reinterpret_cast<const char*>(&now), sizeof(now));
+    crypto::hash node_id = crypto::cn_fast_hash(nid_input.data(), nid_input.size());
+    m_lastNodeId = QString::fromStdString(epee::string_tools::pod_to_hex(node_id));
+    emit lastNodeIdChanged();
+    return m_lastNodeId;
+}
+
+QString Wallet::buildRegistrationExtra(const QString &walletAddress, uint32_t port) {
+    // 1. Wallet keys
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    // 2. Node signing key
+    std::string node_pk_hex;
+    if (!read_node_pubkey_internal(node_pk_hex))
+        return {};
+    crypto::public_key node_pk;
+    if (!epee::string_tools::hex_to_pod(node_pk_hex, node_pk))
+        return {};
+    // 3. Compute node_id = H(wallet_pubkey || node_pubkey || timestamp)
+    const uint64_t now = static_cast<uint64_t>(std::time(nullptr));
+    std::string nid_input;
+    nid_input.append(reinterpret_cast<const char*>(&w_spk), sizeof(w_spk));
+    nid_input.append(reinterpret_cast<const char*>(&node_pk), sizeof(node_pk));
+    nid_input.append(reinterpret_cast<const char*>(&now), sizeof(now));
+    const crypto::hash node_id = crypto::cn_fast_hash(nid_input.data(), nid_input.size());
+    m_lastNodeId = QString::fromStdString(epee::string_tools::pod_to_hex(node_id));
+    emit lastNodeIdChanged();
+    // 4. Sign: sign(H(node_id || node_pubkey)) with wallet spend key
+    const crypto::hash msg_hash = cryptonote::mevatrust::registration_message_hash(node_id, node_pk);
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // 5. Build struct
+    cryptonote::tx_extra_mevatrust_registration reg;
+    reg.node_id        = node_id;
+    reg.wallet_pubkey  = w_spk;
+    reg.node_pubkey    = node_pk;
+    reg.wallet_address = walletAddress.toStdString();
+    reg.port           = port;
+    reg.signature      = sig;
+    // 6. Serialize
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_registration_extra(reg, extra))
+        return {};
+    // 7. Return hex
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildDeregisterExtra(const QString &nodeIdHex) {
+    crypto::hash node_id;
+    if (!epee::string_tools::hex_to_pod(nodeIdHex.toStdString(), node_id))
+        return {};
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    // Sign: sign(H(node_id || "deregister")) with wallet spend key
+    const crypto::hash msg_hash = cryptonote::mevatrust::deregister_message_hash(node_id);
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // Build struct
+    cryptonote::tx_extra_mevatrust_deregister dereg;
+    dereg.node_id       = node_id;
+    dereg.wallet_pubkey = w_spk;
+    dereg.signature     = sig;
+    // Serialize
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_deregister_extra(dereg, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildCircleCreateExtra(const QString &circleName) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    // Firma: sign(H(CREATE || 0x0...0 || admin_pk || name))
+    const crypto::hash cid_zero{};
+    const crypto::hash msg_hash = cryptonote::mevatrust::circle_message_hash(
+        cid_zero, static_cast<uint8_t>(cryptonote::tx_extra_mevatrust_circle::CREATE),
+        w_spk, circleName.toStdString());
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // Build struct
+    cryptonote::tx_extra_mevatrust_circle op{};
+    op.op_type       = cryptonote::tx_extra_mevatrust_circle::CREATE;
+    op.circle_id     = cid_zero;
+    op.circle_name   = circleName.toStdString();
+    op.target_pubkey = w_spk;
+    op.signer_pubkey = w_spk;
+    op.signature     = sig;
+    // Serialize
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_circle_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildCircleJoinExtra(const QString &circleIdHex, const QString &memberPubkeyHex) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash cid;
+    if (!epee::string_tools::hex_to_pod(circleIdHex.toStdString(), cid))
+        return {};
+    crypto::public_key target_pk;
+    if (!epee::string_tools::hex_to_pod(memberPubkeyHex.toStdString(), target_pk))
+        return {};
+    // Firma
+    const crypto::hash msg_hash = cryptonote::mevatrust::circle_message_hash(
+        cid, static_cast<uint8_t>(cryptonote::tx_extra_mevatrust_circle::JOIN),
+        target_pk, "");
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // Build struct
+    cryptonote::tx_extra_mevatrust_circle op{};
+    op.op_type       = cryptonote::tx_extra_mevatrust_circle::JOIN;
+    op.circle_id     = cid;
+    op.circle_name   = "";
+    op.target_pubkey = target_pk;
+    op.signer_pubkey = w_spk;
+    op.signature     = sig;
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_circle_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildCircleLeaveExtra(const QString &circleIdHex, const QString &memberPubkeyHex) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash cid;
+    if (!epee::string_tools::hex_to_pod(circleIdHex.toStdString(), cid))
+        return {};
+    const std::string my_pk_hex = m_walletImpl->publicSpendKey();
+    const std::string target_hex = memberPubkeyHex.isEmpty() ? my_pk_hex : memberPubkeyHex.toStdString();
+    crypto::public_key target_pk;
+    if (!epee::string_tools::hex_to_pod(target_hex, target_pk))
+        return {};
+    // Firma
+    const crypto::hash msg_hash = cryptonote::mevatrust::circle_message_hash(
+        cid, static_cast<uint8_t>(cryptonote::tx_extra_mevatrust_circle::LEAVE),
+        target_pk, "");
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // Build struct
+    cryptonote::tx_extra_mevatrust_circle op{};
+    op.op_type       = cryptonote::tx_extra_mevatrust_circle::LEAVE;
+    op.circle_id     = cid;
+    op.circle_name   = "";
+    op.target_pubkey = target_pk;
+    op.signer_pubkey = w_spk;
+    op.signature     = sig;
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_circle_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildCircleChangeAdminExtra(const QString &circleIdHex, const QString &newAdminPubkeyHex) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash cid;
+    if (!epee::string_tools::hex_to_pod(circleIdHex.toStdString(), cid))
+        return {};
+    crypto::public_key target_pk;
+    if (!epee::string_tools::hex_to_pod(newAdminPubkeyHex.toStdString(), target_pk))
+        return {};
+    // Firma
+    const crypto::hash msg_hash = cryptonote::mevatrust::circle_message_hash(
+        cid, static_cast<uint8_t>(cryptonote::tx_extra_mevatrust_circle::CHANGE_ADMIN),
+        target_pk, "");
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // Build struct
+    cryptonote::tx_extra_mevatrust_circle op{};
+    op.op_type       = cryptonote::tx_extra_mevatrust_circle::CHANGE_ADMIN;
+    op.circle_id     = cid;
+    op.circle_name   = "";
+    op.target_pubkey = target_pk;
+    op.signer_pubkey = w_spk;
+    op.signature     = sig;
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_circle_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildCircleDisbandExtra(const QString &circleIdHex) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash cid;
+    if (!epee::string_tools::hex_to_pod(circleIdHex.toStdString(), cid))
+        return {};
+    // Firma
+    const crypto::hash msg_hash = cryptonote::mevatrust::circle_message_hash(
+        cid, static_cast<uint8_t>(cryptonote::tx_extra_mevatrust_circle::DISBAND),
+        w_spk, "");
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // Build struct
+    cryptonote::tx_extra_mevatrust_circle op{};
+    op.op_type       = cryptonote::tx_extra_mevatrust_circle::DISBAND;
+    op.circle_id     = cid;
+    op.circle_name   = "";
+    op.target_pubkey = w_spk;
+    op.signer_pubkey = w_spk;
+    op.signature     = sig;
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_circle_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildBanExtra(const QString &nodeIdHex, const QString &reason) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash nid;
+    if (!epee::string_tools::hex_to_pod(nodeIdHex.toStdString(), nid))
+        return {};
+    // Build penalty struct
+    cryptonote::tx_extra_mevatrust_penalty pen{};
+    pen.op_type       = cryptonote::tx_extra_mevatrust_penalty::BAN;
+    pen.node_id       = nid;
+    pen.offense_type  = "BAN";
+    pen.amount        = -1000;
+    pen.reason        = reason.toStdString();
+    pen.signer_pubkey = w_spk;
+    // Firma
+    const crypto::hash msg_hash = cryptonote::mevatrust::penalty_message_hash(pen);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, pen.signature);
+    // Serialize
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_penalty_extra(pen, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildUnbanExtra(const QString &nodeIdHex) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash nid;
+    if (!epee::string_tools::hex_to_pod(nodeIdHex.toStdString(), nid))
+        return {};
+    // Build penalty struct (UNBAN)
+    cryptonote::tx_extra_mevatrust_penalty pen{};
+    pen.op_type       = cryptonote::tx_extra_mevatrust_penalty::UNBAN;
+    pen.node_id       = nid;
+    pen.offense_type  = "UNBAN";
+    pen.amount        = 0;
+    pen.reason        = "Unban";
+    pen.signer_pubkey = w_spk;
+    // Firma
+    const crypto::hash msg_hash = cryptonote::mevatrust::penalty_message_hash(pen);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, pen.signature);
+    // Serialize
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_penalty_extra(pen, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildValidatorPromotionExtra(const QString &nodeIdHex, const QString &nodePubkeyHex) {
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash nid;
+    if (!epee::string_tools::hex_to_pod(nodeIdHex.toStdString(), nid))
+        return {};
+    crypto::public_key node_pk;
+    if (!epee::string_tools::hex_to_pod(nodePubkeyHex.toStdString(), node_pk))
+        return {};
+    // Firma
+    const crypto::hash msg_hash = cryptonote::mevatrust::validator_message_hash(nid, w_spk);
+    crypto::signature sig;
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, sig);
+    // Build struct
+    cryptonote::tx_extra_mevatrust_validator val{};
+    val.node_id       = nid;
+    val.wallet_pubkey = w_spk;
+    val.node_pubkey   = node_pk;
+    val.signature     = sig;
+    // Serialize
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_validator_extra(val, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+void Wallet::saveNodeIdToFile(const QString &nodeIdHex) {
+    const char* h = std::getenv("HOME");
+    std::string dir = std::string(h ? h : "/root") + "/.mevacoin/mevatrust";
+    std::string path = dir + "/node_id";
+    // Ensure directory exists
+    std::string mkdir_cmd = "mkdir -p " + dir;
+    system(mkdir_cmd.c_str());
+    std::ofstream f(path);
+    if (f.is_open()) {
+        f << nodeIdHex.toStdString();
+        f.close();
+    }
+}
+
+QString Wallet::readSavedNodeId() {
+    const char* h = std::getenv("HOME");
+    std::string path = std::string(h ? h : "/root") + "/.mevacoin/mevatrust/node_id";
+    std::ifstream f(path);
+    if (!f.is_open()) return {};
+    std::string id;
+    std::getline(f, id);
+    return QString::fromStdString(id);
 }
