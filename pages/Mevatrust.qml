@@ -853,7 +853,7 @@ Rectangle {
                                 color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
 
                                 RowLayout {
-                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 8
                                     MevaCoinComponents.Label {
                                         text: circleName; fontSize: 13; fontBold: true; Layout.fillWidth: true
                                     }
@@ -970,10 +970,7 @@ Rectangle {
                 MevaCoinComponents.Label { id: ciAdmin; text: (circleInfoDialog.circleData.admin_pubkey || circleInfoDialog.circleData.adminPubkey || "").substring(0, 16) + "..."; fontSize: 11; fontFamily: "Courier" }
 
                 MevaCoinComponents.Label { text: qsTr("Members:") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
-                MevaCoinComponents.Label { id: ciMembers; text: {
-                    var m = circleInfoDialog.circleData.members || circleInfoDialog.circleData.Members || [];
-                    return m.length ? m.length.toString() : "0";
-                }; fontSize: 14; fontBold: true }
+                MevaCoinComponents.Label { id: ciMembers; text: (circleInfoDialog.circleData.members || circleInfoDialog.circleData.Members || []).length.toString(); fontSize: 14; fontBold: true }
 
                 MevaCoinComponents.Label { text: qsTr("Created:") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
                 MevaCoinComponents.Label { id: ciCreated; text: circleInfoDialog.circleData.created_height ? qsTr("Block ") + circleInfoDialog.circleData.created_height : "--"; fontSize: 12 }
@@ -1155,7 +1152,7 @@ Rectangle {
                                 Layout.fillWidth: true; height: 44
                                 color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03); radius: 4
                                 RowLayout {
-                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 8
                                     MevaCoinComponents.Label {
                                         text: ("#" + (index + 1)); fontSize: 14; fontBold: true; width: 30
                                         color: index < 3 ? MevaCoinComponents.Style.wookeyGreen : MevaCoinComponents.Style.defaultFontColor
@@ -1310,7 +1307,7 @@ Rectangle {
                                 color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
 
                                 RowLayout {
-                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 8
                                     ColumnLayout { spacing: 1; Layout.fillWidth: true
                                         MevaCoinComponents.Label { text: storeName; fontSize: 13; fontBold: true }
                                         MevaCoinComponents.Label { text: storeId.substring(0, 16) + "..."; fontSize: 10; opacity: 0.5; fontFamily: "Courier" }
@@ -1411,11 +1408,11 @@ Rectangle {
                     RowLayout { spacing: 10
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: csMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }; enabled: csEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit { id: csMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9][0-9]?)") }; enabled: csEuroEnabled.checked }
                         }
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: csEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }; enabled: csEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit { id: csEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9]?[0-9])") }; enabled: csEuroEnabled.checked }
                         }
                     }
                     MevaCoinComponents.Label { text: qsTr("MVC% must be > 0, MVC% + Euro% must = 100") + translationManager.emptyString; fontSize: 9; opacity: 0.5; visible: csEuroEnabled.checked }
@@ -1458,7 +1455,7 @@ Rectangle {
                             mevatrustTxResultDialog.open();
                             return;
                         }
-                        currentWallet.submitMevatrustTransactionAsync(extraHex, 10000000000000ULL);
+                        currentWallet.submitMevatrustTransactionAsync(extraHex, 10000000000000);
                         csName.text = ""; csDesc.text = ""; csUrl.text = "";
                         csEuroEnabled.checked = false; csEuroDetails.text = "";
                         csMvcPct.text = "100"; csEuroPct.text = "0";
@@ -1520,11 +1517,11 @@ Rectangle {
                     RowLayout { spacing: 10
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: usMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }; enabled: usEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit { id: usMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9][0-9]?)") }; enabled: usEuroEnabled.checked }
                         }
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: usEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }; enabled: usEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit { id: usEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9]?[0-9])") }; enabled: usEuroEnabled.checked }
                         }
                     }
                 }
@@ -1642,7 +1639,7 @@ Rectangle {
                                 color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
 
                                 RowLayout {
-                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 8
                                     ColumnLayout { spacing: 1; Layout.fillWidth: true
                                         MevaCoinComponents.Label { text: itemName; fontSize: 13; fontBold: true }
                                         MevaCoinComponents.Label { text: itemDesc; fontSize: 10; opacity: 0.6; elide: Text.ElideRight; Layout.fillWidth: true }
@@ -1712,7 +1709,7 @@ Rectangle {
                             Layout.fillWidth: true; height: 44; radius: 4
                             color: Qt.rgba(1,1,1,0.03)
                             RowLayout {
-                                anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 6
+                                anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 6
                                 ColumnLayout { spacing: 1; Layout.fillWidth: true
                                     MevaCoinComponents.Label { text: qsTr("Buyer: ") + buyerPubkey.substring(0, 16) + "..."; fontSize: 11; fontFamily: "Courier" }
                                     MevaCoinComponents.Label { text: qsTr("Amount: ") + walletManager.displayAmount(mvcAmount) + (euroRef.length > 0 ? qsTr(" + Euro: ") + euroAmount + "¢" : ""); fontSize: 10; opacity: 0.6 }
@@ -1922,7 +1919,7 @@ Rectangle {
                             mevatrustTxResultDialog.open();
                             return;
                         }
-                        currentWallet.submitMevatrustTransactionAsync(extraHex, 1000000000000ULL);
+                        currentWallet.submitMevatrustTransactionAsync(extraHex, 1000000000000);
                         liName.text = ""; liDesc.text = ""; liPrice.text = "";
                         liCategory.text = ""; liMetadata.text = "";
                     }
@@ -2046,7 +2043,7 @@ Rectangle {
                                 Layout.fillWidth: true; height: 52; radius: 4
                                 color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
                                 RowLayout {
-                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 8
                                     ColumnLayout { spacing: 1; Layout.fillWidth: true
                                         MevaCoinComponents.Label { text: qsTr("Item: ") + itemName; fontSize: 12; fontBold: true }
                                         MevaCoinComponents.Label { text: qsTr("Price: ") + walletManager.displayAmount(price) + qsTr(" | Status: ") + statusText; fontSize: 10; opacity: 0.6 }
@@ -2130,7 +2127,7 @@ Rectangle {
                                 Layout.fillWidth: true; height: 52; radius: 4
                                 color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
                                 RowLayout {
-                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8; spacing: 8
                                     ColumnLayout { spacing: 1; Layout.fillWidth: true
                                         MevaCoinComponents.Label { text: qsTr("Store: ") + storeName; fontSize: 12; fontBold: true }
                                         MevaCoinComponents.Label { text: qsTr("Buyer: ") + buyer.substring(0, 16) + qsTr(" | Amount: ") + walletManager.displayAmount(amount); fontSize: 10; opacity: 0.6 }
