@@ -39,8 +39,9 @@ Item {
     property bool primary: true
     property string rightIcon: ""
     property string rightIconInactive: ""
-    property color textColor: primary ? MevaCoinComponents.Style.buttonTextColor : MevaCoinComponents.Style.buttonSecondaryTextColor;
+    property color textColor: red ? "white" : (primary ? MevaCoinComponents.Style.buttonTextColor : MevaCoinComponents.Style.buttonSecondaryTextColor);
     property bool small: false
+    property bool red: false
     property alias text: label.text
     property alias fontBold: label.font.bold
     property int fontSize: {
@@ -79,9 +80,10 @@ Item {
                 when: button.enabled && (buttonArea.containsMouse || button.focus)
                 PropertyChanges {
                     target: buttonRect
-                    color: primary
-                        ? MevaCoinComponents.Style.buttonBackgroundColorHover
-                        : MevaCoinComponents.Style.buttonSecondaryBackgroundColorHover
+                    color: red ? "#c0392b"
+                        : (primary
+                            ? MevaCoinComponents.Style.buttonBackgroundColorHover
+                            : MevaCoinComponents.Style.buttonSecondaryBackgroundColorHover)
                 }
             },
             State {
@@ -89,9 +91,10 @@ Item {
                 when: button.enabled
                 PropertyChanges {
                     target: buttonRect
-                    color: primary
-                        ? MevaCoinComponents.Style.buttonBackgroundColor
-                        : MevaCoinComponents.Style.buttonSecondaryBackgroundColor
+                    color: red ? "#e74c3c"
+                        : (primary
+                            ? MevaCoinComponents.Style.buttonBackgroundColor
+                            : MevaCoinComponents.Style.buttonSecondaryBackgroundColor)
                 }
             },
             State {
@@ -100,9 +103,10 @@ Item {
                 PropertyChanges {
                     target: buttonRect
                     opacity: 0.5
-                    color: primary
-                        ? MevaCoinComponents.Style.buttonBackgroundColor
-                        : MevaCoinComponents.Style.buttonSecondaryBackgroundColor
+                    color: red ? "#e74c3c"
+                        : (primary
+                            ? MevaCoinComponents.Style.buttonBackgroundColor
+                            : MevaCoinComponents.Style.buttonSecondaryBackgroundColor)
                 }
                 PropertyChanges {
                     target: label
