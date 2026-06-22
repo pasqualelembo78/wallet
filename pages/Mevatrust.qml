@@ -1264,6 +1264,33 @@ Rectangle {
                         mevatrustManager.storeMyPurchases(pk);
                     }
                 }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("My Sales") + translationManager.emptyString; small: true
+                    onClicked: {
+                        salesHistoryDialog.storeIds = [];
+                        salesHistoryDialog.resultModel.clear();
+                        var pk = currentWallet ? currentWallet.publicSpendKey : "";
+                        // Collect stores owned by this wallet
+                        var owned = [];
+                        for (var i = 0; i < storeRepeater.model.count; i++) {
+                            var s = storeRepeater.model.get(i);
+                            if (s.ownerPubkey === pk) {
+                                owned.push(s);
+                            }
+                        }
+                        if (owned.length === 0) {
+                            appWindow.showStatusMessage(qsTr("You don't own any stores") + translationManager.emptyString, 3);
+                            return;
+                        }
+                        salesHistoryDialog.storeIds = owned.map(function(s) { return s.storeId; });
+                        salesHistoryDialog.storeNames = owned.map(function(s) { return s.storeName; });
+                        // Load purchases for each store
+                        for (var j = 0; j < owned.length; j++) {
+                            mevatrustManager.storePurchasesByStore(owned[j].storeId);
+                        }
+                        salesHistoryDialog.open();
+                    }
+                }
             }
 
             Rectangle {
@@ -1342,10 +1369,10 @@ Rectangle {
         id: createStoreDialog
         title: qsTr("Create New Store") + translationManager.emptyString
         width: Math.min(500, mevatrustPage.width * 0.92)
-        height: 300
+        height: mobileMode ? 520 : 480
 
         ColumnLayout {
-            anchors.fill: parent; anchors.margins: 15; spacing: 10
+            anchors.fill: parent; anchors.margins: 15; spacing: 8
 
             MevaCoinComponents.Label { text: qsTr("Store Name:") + translationManager.emptyString; fontSize: 13 }
             MevaCoinComponents.LineEdit {
@@ -1363,6 +1390,36 @@ Rectangle {
             MevaCoinComponents.LineEdit {
                 id: csUrl; Layout.fillWidth: true
                 placeholderText: qsTr("https://...") + translationManager.emptyString
+            }
+
+            // ── Euro Payment Options ────────────────────────────────
+            Rectangle {
+                Layout.fillWidth: true; implicitHeight: csEuroLayout.implicitHeight + 10
+                color: Qt.rgba(0,0.8,0.5,0.06); radius: 4; border.color: Qt.rgba(0,0.8,0.5,0.2); border.width: 1
+
+                ColumnLayout {
+                    id: csEuroLayout
+                    anchors.fill: parent; anchors.margins: 8; spacing: 6
+
+                    MevaCoinComponents.Label { text: qsTr("Euro Payment (optional)") + translationManager.emptyString; fontSize: 11; fontBold: true; color: MevaCoinComponents.Style.wookeyGreen }
+                    RowLayout { spacing: 8
+                        MevaCoinComponents.CheckBox { id: csEuroEnabled; text: qsTr("Enable Euro payments") + translationManager.emptyString }
+                        Item { Layout.fillWidth: true }
+                    }
+                    MevaCoinComponents.Label { text: qsTr("Euro Details (IBAN, PayPal email, etc.):") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
+                    MevaCoinComponents.LineEdit { id: csEuroDetails; Layout.fillWidth: true; placeholderText: qsTr("IBAN or PayPal email") + translationManager.emptyString; enabled: csEuroEnabled.checked }
+                    RowLayout { spacing: 10
+                        ColumnLayout { Layout.fillWidth: true
+                            MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
+                            MevaCoinComponents.LineEdit { id: csMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }; enabled: csEuroEnabled.checked }
+                        }
+                        ColumnLayout { Layout.fillWidth: true
+                            MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
+                            MevaCoinComponents.LineEdit { id: csEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }; enabled: csEuroEnabled.checked }
+                        }
+                    }
+                    MevaCoinComponents.Label { text: qsTr("MVC% must be > 0, MVC% + Euro% must = 100") + translationManager.emptyString; fontSize: 9; opacity: 0.5; visible: csEuroEnabled.checked }
+                }
             }
 
             Rectangle {
@@ -1384,12 +1441,16 @@ Rectangle {
                 }
                 MevaCoinComponents.StandardButton {
                     text: qsTr("Create Store") + translationManager.emptyString; primary: true
-                    enabled: csName.text.trim().length > 0
+                    enabled: csName.text.trim().length > 0 && (csEuroEnabled.checked ? (parseInt(csMvcPct.text) + parseInt(csEuroPct.text) === 100) : true)
                     onClicked: {
                         if (!currentWallet) return;
                         createStoreDialog.close();
+                        var euroEnabled = csEuroEnabled.checked;
+                        var mvcPct = parseInt(csMvcPct.text.trim()) || 100;
+                        var euroPct = parseInt(csEuroPct.text.trim()) || 0;
                         var extraHex = currentWallet.buildStoreCreateExtra(
-                            csName.text.trim(), csDesc.text.trim(), csUrl.text.trim()
+                            csName.text.trim(), csDesc.text.trim(), csUrl.text.trim(),
+                            euroEnabled, csEuroDetails.text.trim(), mvcPct, euroPct
                         );
                         if (extraHex.length === 0) {
                             mevatrustTxResultDialog.txSuccess = false;
@@ -1399,6 +1460,104 @@ Rectangle {
                         }
                         currentWallet.submitMevatrustTransactionAsync(extraHex, 10000000000000ULL);
                         csName.text = ""; csDesc.text = ""; csUrl.text = "";
+                        csEuroEnabled.checked = false; csEuroDetails.text = "";
+                        csMvcPct.text = "100"; csEuroPct.text = "0";
+                    }
+                }
+            }
+        }
+    }
+
+    // ── UPDATE STORE DIALOG ───────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: updateStoreDialog
+        title: qsTr("Update Store") + translationManager.emptyString
+        property string storeId: ""
+        property var nameField: usName
+        property var descField: usDesc
+        property var urlField: usUrl
+        property var euroEnabled: usEuroEnabled
+        property var euroDetails: usEuroDetails
+        property var mvcPct: usMvcPct
+        property var euroPct: usEuroPct
+        width: Math.min(500, mevatrustPage.width * 0.92)
+        height: mobileMode ? 520 : 480
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 8
+
+            MevaCoinComponents.Label { text: qsTr("Store Name:") + translationManager.emptyString; fontSize: 13 }
+            MevaCoinComponents.LineEdit {
+                id: usName; Layout.fillWidth: true
+                placeholderText: qsTr("Enter store name") + translationManager.emptyString
+            }
+
+            MevaCoinComponents.Label { text: qsTr("Description:") + translationManager.emptyString; fontSize: 13 }
+            MevaCoinComponents.LineEdit {
+                id: usDesc; Layout.fillWidth: true
+                placeholderText: qsTr("Short description of your store") + translationManager.emptyString
+            }
+
+            MevaCoinComponents.Label { text: qsTr("URL (optional):") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
+            MevaCoinComponents.LineEdit {
+                id: usUrl; Layout.fillWidth: true
+                placeholderText: qsTr("https://...") + translationManager.emptyString
+            }
+
+            Rectangle {
+                Layout.fillWidth: true; implicitHeight: usEuroLayout.implicitHeight + 10
+                color: Qt.rgba(0,0.8,0.5,0.06); radius: 4; border.color: Qt.rgba(0,0.8,0.5,0.2); border.width: 1
+                ColumnLayout {
+                    id: usEuroLayout
+                    anchors.fill: parent; anchors.margins: 8; spacing: 6
+                    MevaCoinComponents.Label { text: qsTr("Euro Payment (optional)") + translationManager.emptyString; fontSize: 11; fontBold: true; color: MevaCoinComponents.Style.wookeyGreen }
+                    RowLayout { spacing: 8
+                        MevaCoinComponents.CheckBox { id: usEuroEnabled; text: qsTr("Enable Euro payments") + translationManager.emptyString }
+                        Item { Layout.fillWidth: true }
+                    }
+                    MevaCoinComponents.Label { text: qsTr("Euro Details:") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
+                    MevaCoinComponents.LineEdit { id: usEuroDetails; Layout.fillWidth: true; enabled: usEuroEnabled.checked }
+                    RowLayout { spacing: 10
+                        ColumnLayout { Layout.fillWidth: true
+                            MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
+                            MevaCoinComponents.LineEdit { id: usMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }; enabled: usEuroEnabled.checked }
+                        }
+                        ColumnLayout { Layout.fillWidth: true
+                            MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
+                            MevaCoinComponents.LineEdit { id: usEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }; enabled: usEuroEnabled.checked }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true; spacing: 10
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Cancel") + translationManager.emptyString
+                    onClicked: updateStoreDialog.close()
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Update Store") + translationManager.emptyString; primary: true
+                    enabled: usName.text.trim().length > 0
+                    onClicked: {
+                        if (!currentWallet) return;
+                        updateStoreDialog.close();
+                        var euroEnabled = usEuroEnabled.checked;
+                        var mvcPct = parseInt(usMvcPct.text.trim()) || 100;
+                        var euroPct = parseInt(usEuroPct.text.trim()) || 0;
+                        var extraHex = currentWallet.buildStoreUpdateExtra(
+                            updateStoreDialog.storeId,
+                            usName.text.trim(), usDesc.text.trim(), usUrl.text.trim(),
+                            euroEnabled, usEuroDetails.text.trim(), mvcPct, euroPct
+                        );
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build update tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionAsync(extraHex);
                     }
                 }
             }
@@ -1413,7 +1572,7 @@ Rectangle {
         property string storeId: ""
         property string myPubkey: currentWallet ? currentWallet.publicSpendKey : ""
         width: Math.min(600, mevatrustPage.width * 0.92)
-        height: mobileMode ? 450 : 500
+        height: mobileMode ? 550 : 600
 
         ColumnLayout {
             anchors.fill: parent; anchors.margins: 15; spacing: 8
@@ -1421,6 +1580,7 @@ Rectangle {
             MevaCoinComponents.Label { id: sdName; text: "--"; fontSize: 20; fontBold: true }
             MevaCoinComponents.Label { id: sdDesc; text: ""; fontSize: 12; opacity: 0.7; wrapMode: Text.Wrap; Layout.fillWidth: true }
             MevaCoinComponents.Label { id: sdOwner; text: ""; fontSize: 10; opacity: 0.5; fontFamily: "Courier" }
+            MevaCoinComponents.Label { id: sdEuroInfo; text: ""; fontSize: 10; opacity: 0.6; visible: text.length > 0 }
 
             Rectangle { Layout.fillWidth: true; height: 1; color: MevaCoinComponents.Style.dividerColor; opacity: 0.3 }
 
@@ -1433,10 +1593,40 @@ Rectangle {
                     visible: storeDetailsDialog.storeData.owner_pubkey === storeDetailsDialog.myPubkey
                     onClicked: listItemDialog.open()
                 }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Edit") + translationManager.emptyString
+                    visible: storeDetailsDialog.storeData.owner_pubkey === storeDetailsDialog.myPubkey
+                    onClicked: {
+                        updateStoreDialog.storeId = storeDetailsDialog.storeId;
+                        updateStoreDialog.nameField.text = storeDetailsDialog.storeData.name || "";
+                        updateStoreDialog.descField.text = storeDetailsDialog.storeData.description || "";
+                        updateStoreDialog.urlField.text = storeDetailsDialog.storeData.url || "";
+                        updateStoreDialog.euroEnabled.checked = storeDetailsDialog.storeData.euro_enabled || false;
+                        updateStoreDialog.euroDetails.text = storeDetailsDialog.storeData.euro_details || "";
+                        updateStoreDialog.mvcPct.text = String(storeDetailsDialog.storeData.mvc_percent || 100);
+                        updateStoreDialog.euroPct.text = String(storeDetailsDialog.storeData.euro_percent || 0);
+                        updateStoreDialog.open();
+                    }
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Deactivate") + translationManager.emptyString; red: true
+                    visible: storeDetailsDialog.storeData.owner_pubkey === storeDetailsDialog.myPubkey
+                    onClicked: {
+                        if (!currentWallet) return;
+                        var extraHex = currentWallet.buildStoreDeactivateExtra(storeDetailsDialog.storeId);
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build deactivate tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionAsync(extraHex);
+                    }
+                }
             }
 
             Rectangle {
-                Layout.fillWidth: true; Layout.fillHeight: true
+                Layout.fillWidth: true; Layout.preferredHeight: 120
                 color: MevaCoinComponents.Style.titleBarBackgroundGradientStart
                 radius: 6; border.color: MevaCoinComponents.Style.dividerColor; border.width: 1; clip: true
 
@@ -1464,20 +1654,94 @@ Rectangle {
                                     }
                                     MevaCoinComponents.StandardButton {
                                         text: qsTr("Buy") + translationManager.emptyString; small: true; primary: true
-                                        enabled: storeDetailsDialog.storeData.owner_pubkey !== storeDetailsDialog.myPubkey
+                                        visible: storeDetailsDialog.storeData.owner_pubkey !== storeDetailsDialog.myPubkey
                                         onClicked: {
                                             if (!currentWallet) return;
-                                            var extraHex = currentWallet.buildItemBuyExtra(
-                                                storeDetailsDialog.storeId, itemId
-                                            );
-                                            if (extraHex.length === 0) {
+                                            var sellerAddr = storeDetailsDialog.storeData.payment_address || "";
+                                            if (sellerAddr.length === 0) {
                                                 mevatrustTxResultDialog.txSuccess = false;
-                                                mevatrustTxResultDialog.txError = qsTr("Failed to build buy tx") + translationManager.emptyString;
+                                                mevatrustTxResultDialog.txError = qsTr("Seller has no payment address") + translationManager.emptyString;
                                                 mevatrustTxResultDialog.open();
                                                 return;
                                             }
-                                            currentWallet.submitMevatrustTransactionAsync(extraHex, itemPrice);
+                                            buyItemDialog.storeId = storeDetailsDialog.storeId;
+                                            buyItemDialog.itemId = itemId;
+                                            buyItemDialog.itemPrice = itemPrice;
+                                            buyItemDialog.itemPaymentMode = itemPaymentMode;
+                                            buyItemDialog.sellerAddress = sellerAddr;
+                                            buyItemDialog.open();
                                         }
+                                    }
+                                    MevaCoinComponents.StandardButton {
+                                        text: qsTr("Delist") + translationManager.emptyString; small: true
+                                        visible: storeDetailsDialog.storeData.owner_pubkey === storeDetailsDialog.myPubkey
+                                        onClicked: {
+                                            if (!currentWallet) return;
+                                            var extraHex = currentWallet.buildItemDelistExtra(storeDetailsDialog.storeId, itemId);
+                                            if (extraHex.length === 0) {
+                                                mevatrustTxResultDialog.txSuccess = false;
+                                                mevatrustTxResultDialog.txError = qsTr("Failed to build delist tx") + translationManager.emptyString;
+                                                mevatrustTxResultDialog.open();
+                                                return;
+                                            }
+                                            currentWallet.submitMevatrustTransactionAsync(extraHex);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Pending Orders (seller only) ─────────────────────────
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: pendingOrdersLayout.implicitHeight + 12
+                color: Qt.rgba(1,0.6,0,0.06)
+                radius: 6; border.color: Qt.rgba(1,0.6,0,0.2); border.width: 1
+                visible: storeDetailsDialog.storeData.owner_pubkey === storeDetailsDialog.myPubkey && pendingOrdersRepeater.count > 0
+
+                ColumnLayout {
+                    id: pendingOrdersLayout
+                    anchors.fill: parent; anchors.margins: 8; spacing: 4
+                    MevaCoinComponents.Label { text: qsTr("Pending Orders") + translationManager.emptyString; fontSize: 13; fontBold: true; color: MevaCoinComponents.Style.orange }
+                    Repeater {
+                        id: pendingOrdersRepeater; model: ListModel {}
+                        delegate: Rectangle {
+                            Layout.fillWidth: true; height: 44; radius: 4
+                            color: Qt.rgba(1,1,1,0.03)
+                            RowLayout {
+                                anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 6
+                                ColumnLayout { spacing: 1; Layout.fillWidth: true
+                                    MevaCoinComponents.Label { text: qsTr("Buyer: ") + buyerPubkey.substring(0, 16) + "..."; fontSize: 11; fontFamily: "Courier" }
+                                    MevaCoinComponents.Label { text: qsTr("Amount: ") + walletManager.displayAmount(mvcAmount) + (euroRef.length > 0 ? qsTr(" + Euro: ") + euroAmount + "¢" : ""); fontSize: 10; opacity: 0.6 }
+                                }
+                                MevaCoinComponents.StandardButton {
+                                    text: qsTr("Confirm") + translationManager.emptyString; small: true; primary: true
+                                    onClicked: {
+                                        var pk = currentWallet ? currentWallet.publicSpendKey : "";
+                                        var extraHex = currentWallet.buildStoreConfirmExtra(storeId, itemId, buyerPubkey);
+                                        if (extraHex.length === 0) {
+                                            mevatrustTxResultDialog.txSuccess = false;
+                                            mevatrustTxResultDialog.txError = qsTr("Failed to build confirm tx") + translationManager.emptyString;
+                                            mevatrustTxResultDialog.open();
+                                            return;
+                                        }
+                                        currentWallet.submitMevatrustTransactionAsync(extraHex);
+                                    }
+                                }
+                                MevaCoinComponents.StandardButton {
+                                    text: qsTr("Cancel") + translationManager.emptyString; small: true
+                                    onClicked: {
+                                        var extraHex = currentWallet.buildStoreCancelExtra(storeId, itemId, buyerPubkey, "");
+                                        if (extraHex.length === 0) {
+                                            mevatrustTxResultDialog.txSuccess = false;
+                                            mevatrustTxResultDialog.txError = qsTr("Failed to build cancel tx") + translationManager.emptyString;
+                                            mevatrustTxResultDialog.open();
+                                            return;
+                                        }
+                                        currentWallet.submitMevatrustTransactionAsync(extraHex);
                                     }
                                 }
                             }
@@ -1494,6 +1758,11 @@ Rectangle {
                 sdName.text = result.name || "--";
                 sdDesc.text = result.description || "";
                 sdOwner.text = qsTr("Owner: ") + (result.owner_pubkey || "").substring(0, 16) + "...";
+                if (result.euro_enabled) {
+                    sdEuroInfo.text = qsTr("Euro payments: ") + result.euro_details + qsTr(" (MVC: ") + result.mvc_percent + "%, Euro: " + result.euro_percent + "%)";
+                } else {
+                    sdEuroInfo.text = "";
+                }
                 itemRepeater.model.clear();
                 var items = result.items || [];
                 for (var i = 0; i < items.length; i++) {
@@ -1503,17 +1772,74 @@ Rectangle {
                         itemName: it.name || "Unnamed",
                         itemDesc: it.description || "",
                         itemPrice: it.price || 0,
-                        itemCategory: it.category || ""
+                        itemCategory: it.category || "",
+                        itemPaymentMode: it.payment_mode || "mvc_only"
                     });
+                }
+                // Load pending purchases if we're the owner
+                if (result.owner_pubkey === storeDetailsDialog.myPubkey) {
+                    mevatrustManager.storePurchasesByStore(storeDetailsDialog.storeId);
                 }
                 storeDetailsDialog.open();
             }
-            onStoreMyPurchasesReceived: {
+            onStorePurchasesByStoreReceived: {
+                pendingOrdersRepeater.model.clear();
                 var purchases = result.purchases || [];
+                for (var i = 0; i < purchases.length; i++) {
+                    var p = purchases[i];
+                    if (p.status === 0) { // PURCHASE_PENDING
+                        pendingOrdersRepeater.model.append({
+                            storeId: p.store_id || "",
+                            itemId: p.item_id || "",
+                            buyerPubkey: p.buyer_pubkey || "",
+                            mvcAmount: p.mvc_amount_paid || 0,
+                            euroRef: p.euro_ref || "",
+                            euroAmount: p.euro_amount || 0
+                        });
+                    }
+                }
+                // Also populate sales history dialog if open
+                if (salesHistoryDialog.visible) {
+                    for (var j = 0; j < purchases.length; j++) {
+                        var pp = purchases[j];
+                        var sid = pp.store_id || "";
+                        var sIdx = salesHistoryDialog.storeIds.indexOf(sid);
+                        var sName = sIdx >= 0 ? salesHistoryDialog.storeNames[sIdx] : sid.substring(0, 16);
+                var statusLabels = ["Pending", "Confirmed", "Cancelled", "Refunded", "Completed"];
+                        salesHistoryDialog.resultModel.append({
+                            storeId: sid,
+                            storeName: sName,
+                            itemId: pp.item_id || "",
+                            buyer: pp.buyer_pubkey || "",
+                            buyerPubkey: pp.buyer_pubkey || "",
+                            amount: pp.mvc_amount_paid || 0,
+                            status: pp.status || 0,
+                            statusText: statusLabels[pp.status] || "Unknown"
+                        });
+                    }
+                }
+            }
+            onStoreMyPurchasesReceived: {
+                myPurchasesRepeater.model.clear();
+                var purchases = result.purchases || [];
+                var statusLabels = ["Pending", "Confirmed", "Cancelled", "Refunded", "Completed"];
+                for (var i = 0; i < purchases.length; i++) {
+                    var p = purchases[i];
+                    myPurchasesRepeater.model.append({
+                        storeId: p.store_id || "",
+                        itemId: p.item_id || "",
+                        itemName: p.item_name || "Item #" + (p.item_id || "").substring(0, 8),
+                        price: p.mvc_amount_paid || 0,
+                        status: p.status || 0,
+                        statusText: statusLabels[p.status] || "Unknown"
+                    });
+                }
                 var msg = purchases.length > 0
                     ? qsTr("You have ") + purchases.length + qsTr(" purchase(s)")
                     : qsTr("No purchases yet") + translationManager.emptyString;
                 appWindow.showStatusMessage(msg, 3);
+                // Open the purchases dialog
+                myPurchasesDialog.open();
             }
         }
     }
@@ -1548,6 +1874,17 @@ Rectangle {
             MevaCoinComponents.Label { text: qsTr("Metadata (optional):") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
             MevaCoinComponents.LineEdit { id: liMetadata; Layout.fillWidth: true; placeholderText: qsTr("Additional info") + translationManager.emptyString }
 
+            // ── Payment Mode ────────────────────────────────────────
+            MevaCoinComponents.Label { text: qsTr("Payment Mode:") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
+            MevaCoinComponents.StandardDropdown {
+                id: liPaymentMode
+                Layout.fillWidth: true
+                dataModel: ListModel {
+                    ListElement { column1: "mvc_only" }
+                    ListElement { column1: "mvc_euro" }
+                }
+            }
+
             Rectangle {
                 Layout.fillWidth: true; height: 30; radius: 4
                 color: Qt.rgba(1,0.8,0,0.1); border.color: Qt.rgba(1,0.8,0,0.3)
@@ -1572,10 +1909,12 @@ Rectangle {
                         if (!currentWallet) return;
                         listItemDialog.close();
                         var price = parseInt(liPrice.text.trim()) || 0;
+                        var pm = liPaymentMode.dataModel.get(liPaymentMode.currentIndex).column1 || "mvc_only";
                         var extraHex = currentWallet.buildItemListExtra(
                             storeDetailsDialog.storeId, liName.text.trim(),
                             liDesc.text.trim(), price,
-                            liCategory.text.trim(), liMetadata.text.trim()
+                            liCategory.text.trim(), liMetadata.text.trim(),
+                            pm
                         );
                         if (extraHex.length === 0) {
                             mevatrustTxResultDialog.txSuccess = false;
@@ -1587,6 +1926,247 @@ Rectangle {
                         liName.text = ""; liDesc.text = ""; liPrice.text = "";
                         liCategory.text = ""; liMetadata.text = "";
                     }
+                }
+            }
+        }
+    }
+
+    // ── BUY ITEM DIALOG ─────────────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: buyItemDialog
+        title: qsTr("Buy Item") + translationManager.emptyString
+        property string storeId: ""
+        property string itemId: ""
+        property string itemName: ""
+        property var itemPrice: 0
+        property string sellerAddress: ""
+        property string itemPaymentMode: "mvc_only"
+
+        onItemPaymentModeChanged: {
+            biPaymentMethod.dataModel.clear();
+            if (itemPaymentMode === "mvc_only") {
+                biPaymentMethod.dataModel.append({ column1: "mvc_only" });
+            } else {
+                biPaymentMethod.dataModel.append({ column1: "mvc_only" });
+                biPaymentMethod.dataModel.append({ column1: "mvc_euro" });
+            }
+            biPaymentMethod.currentIndex = 0;
+        }
+
+        width: Math.min(500, mevatrustPage.width * 0.92)
+        height: mobileMode ? 420 : 400
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 10
+
+            MevaCoinComponents.Label { text: qsTr("Confirm Purchase") + translationManager.emptyString; fontSize: 16; fontBold: true }
+            MevaCoinComponents.Label { text: qsTr("Price: ") + walletManager.displayAmount(buyItemDialog.itemPrice); fontSize: 14; color: MevaCoinComponents.Style.wookeyGreen }
+            MevaCoinComponents.Label { text: qsTr("Seller: ") + buyItemDialog.sellerAddress.substring(0, 24) + "..."; fontSize: 11; opacity: 0.6; fontFamily: "Courier" }
+
+            MevaCoinComponents.Label { text: qsTr("Quantity:") + translationManager.emptyString; fontSize: 12 }
+            MevaCoinComponents.LineEdit {
+                id: biQuantity
+                Layout.fillWidth: true
+                text: "1"
+                validator: RegExpValidator { regExp: /[1-9][0-9]*/ }
+            }
+
+            MevaCoinComponents.Label { text: qsTr("Payment Method:") + translationManager.emptyString; fontSize: 12 }
+            MevaCoinComponents.StandardDropdown {
+                id: biPaymentMethod
+                Layout.fillWidth: true
+                dataModel: ListModel {
+                    ListElement { column1: "mvc_only" }
+                }
+            }
+
+            MevaCoinComponents.Label { text: qsTr("Euro Ref:") + translationManager.emptyString; fontSize: 11; opacity: 0.6; visible: biPaymentMethod.currentIndex === 1 }
+            MevaCoinComponents.LineEdit { id: biEuroRef; Layout.fillWidth: true; placeholderText: qsTr("Transaction ID or reference") + translationManager.emptyString; visible: biPaymentMethod.currentIndex === 1 }
+
+            MevaCoinComponents.Label { text: qsTr("Euro Amount (cents):") + translationManager.emptyString; fontSize: 11; opacity: 0.6; visible: biPaymentMethod.currentIndex === 1 }
+            MevaCoinComponents.LineEdit { id: biEuroAmount; Layout.fillWidth: true; placeholderText: "0"; validator: RegExpValidator { regExp: /[0-9]*/ }; visible: biPaymentMethod.currentIndex === 1 }
+
+            RowLayout { spacing: 10
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Cancel") + translationManager.emptyString
+                    onClicked: buyItemDialog.close()
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Buy Now") + translationManager.emptyString; primary: true
+                    onClicked: {
+                        if (!currentWallet) return;
+                        buyItemDialog.close();
+                        var pm = biPaymentMethod.dataModel.get(biPaymentMethod.currentIndex).column1 || "mvc_only";
+                        var qty = parseInt(biQuantity.text.trim()) || 1;
+                        var eurAmt = parseInt(biEuroAmount.text.trim()) || 0;
+                        var extraHex = currentWallet.buildItemBuyExtra(
+                            buyItemDialog.storeId, buyItemDialog.itemId,
+                            pm,
+                            biEuroRef.text.trim(), eurAmt, qty
+                        );
+                        if (extraHex.length === 0) {
+                            mevatrustTxResultDialog.txSuccess = false;
+                            mevatrustTxResultDialog.txError = qsTr("Failed to build buy tx") + translationManager.emptyString;
+                            mevatrustTxResultDialog.open();
+                            return;
+                        }
+                        currentWallet.submitMevatrustTransactionToAddressAsync(
+                            buyItemDialog.sellerAddress, extraHex, buyItemDialog.itemPrice * qty
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // ── MY PURCHASES DIALOG ────────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: myPurchasesDialog
+        title: qsTr("My Purchases") + translationManager.emptyString
+        width: Math.min(550, mevatrustPage.width * 0.92)
+        height: 350
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 8
+
+            Rectangle {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                color: MevaCoinComponents.Style.titleBarBackgroundGradientStart
+                radius: 6; border.color: MevaCoinComponents.Style.dividerColor; border.width: 1; clip: true
+
+                Flickable {
+                    anchors.fill: parent; anchors.margins: 8
+                    contentHeight: myPurchasesLayout.implicitHeight; interactive: true
+                    ColumnLayout {
+                        id: myPurchasesLayout; width: parent.width; spacing: 4
+                        Repeater {
+                            id: myPurchasesRepeater; model: ListModel {}
+                            delegate: Rectangle {
+                                Layout.fillWidth: true; height: 52; radius: 4
+                                color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
+                                RowLayout {
+                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    ColumnLayout { spacing: 1; Layout.fillWidth: true
+                                        MevaCoinComponents.Label { text: qsTr("Item: ") + itemName; fontSize: 12; fontBold: true }
+                                        MevaCoinComponents.Label { text: qsTr("Price: ") + walletManager.displayAmount(price) + qsTr(" | Status: ") + statusText; fontSize: 10; opacity: 0.6 }
+                                        MevaCoinComponents.Label { text: qsTr("Store: ") + storeId.substring(0, 16) + "..."; fontSize: 9; opacity: 0.4; fontFamily: "Courier" }
+                                    }
+                                    MevaCoinComponents.StandardButton {
+                                        text: qsTr("Cancel Order") + translationManager.emptyString; small: true
+                                        visible: status === 0
+                                        onClicked: {
+                                            if (!currentWallet) return;
+                                            var extraHex = currentWallet.buildBuyerCancelExtra(storeId, itemId, "");
+                                            if (extraHex.length === 0) {
+                                                mevatrustTxResultDialog.txSuccess = false;
+                                                mevatrustTxResultDialog.txError = qsTr("Failed to build cancel tx") + translationManager.emptyString;
+                                                mevatrustTxResultDialog.open();
+                                                return;
+                                            }
+                                            currentWallet.submitMevatrustTransactionAsync(extraHex);
+                                        }
+                                    }
+                                    MevaCoinComponents.StandardButton {
+                                        text: qsTr("Confirm Receipt") + translationManager.emptyString; small: true; primary: true
+                                        visible: status === 1
+                                        onClicked: {
+                                            if (!currentWallet) return;
+                                            var extraHex = currentWallet.buildBuyerConfirmReceiptExtra(storeId, itemId);
+                                            if (extraHex.length === 0) {
+                                                mevatrustTxResultDialog.txSuccess = false;
+                                                mevatrustTxResultDialog.txError = qsTr("Failed to build confirm receipt tx") + translationManager.emptyString;
+                                                mevatrustTxResultDialog.open();
+                                                return;
+                                            }
+                                            currentWallet.submitMevatrustTransactionAsync(extraHex);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Close") + translationManager.emptyString
+                    onClicked: myPurchasesDialog.close()
+                }
+            }
+        }
+    }
+
+    // ── SALES HISTORY DIALOG ───────────────────────────────────────────
+    MevaCoinComponents.StandardDialog {
+        id: salesHistoryDialog
+        title: qsTr("My Sales") + translationManager.emptyString
+        property var storeIds: []
+        property var storeNames: []
+        property var resultModel: ListModel {}
+
+        width: Math.min(600, mevatrustPage.width * 0.92)
+        height: 400
+
+        ColumnLayout {
+            anchors.fill: parent; anchors.margins: 15; spacing: 8
+
+            Rectangle {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                color: MevaCoinComponents.Style.titleBarBackgroundGradientStart
+                radius: 6; border.color: MevaCoinComponents.Style.dividerColor; border.width: 1; clip: true
+
+                Flickable {
+                    anchors.fill: parent; anchors.margins: 8
+                    contentHeight: salesHistoryLayout.implicitHeight; interactive: true
+                    ColumnLayout {
+                        id: salesHistoryLayout; width: parent.width; spacing: 4
+                        Repeater {
+                            id: salesHistoryRepeater; model: salesHistoryDialog.resultModel
+                            delegate: Rectangle {
+                                Layout.fillWidth: true; height: 52; radius: 4
+                                color: index % 2 === 0 ? "transparent" : Qt.rgba(1,1,1,0.03)
+                                RowLayout {
+                                    anchors.fill: parent; anchors.margins: { left: 8; right: 8 }; spacing: 8
+                                    ColumnLayout { spacing: 1; Layout.fillWidth: true
+                                        MevaCoinComponents.Label { text: qsTr("Store: ") + storeName; fontSize: 12; fontBold: true }
+                                        MevaCoinComponents.Label { text: qsTr("Buyer: ") + buyer.substring(0, 16) + qsTr(" | Amount: ") + walletManager.displayAmount(amount); fontSize: 10; opacity: 0.6 }
+                                        MevaCoinComponents.Label { text: qsTr("Status: ") + statusText; fontSize: 10; opacity: 0.5 }
+                                    }
+                                    MevaCoinComponents.StandardButton {
+                                        text: qsTr("Confirm") + translationManager.emptyString; small: true; primary: true
+                                        visible: status === 0 // PENDING
+                                        onClicked: {
+                                            var extraHex = currentWallet.buildStoreConfirmExtra(storeId, itemId, buyerPubkey);
+                                            if (extraHex.length === 0) return;
+                                            currentWallet.submitMevatrustTransactionAsync(extraHex);
+                                        }
+                                    }
+                                    MevaCoinComponents.StandardButton {
+                                        text: qsTr("Cancel") + translationManager.emptyString; small: true
+                                        visible: status === 0
+                                        onClicked: {
+                                            var extraHex = currentWallet.buildStoreCancelExtra(storeId, itemId, buyerPubkey, "");
+                                            if (extraHex.length === 0) return;
+                                            currentWallet.submitMevatrustTransactionAsync(extraHex);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Close") + translationManager.emptyString
+                    onClicked: salesHistoryDialog.close()
                 }
             }
         }

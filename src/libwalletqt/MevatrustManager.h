@@ -60,6 +60,7 @@ public:
     Q_INVOKABLE void storeShow(const QString &storeId);
     Q_INVOKABLE void storeSearch(const QString &keyword, bool searchItems = true);
     Q_INVOKABLE void storeMyPurchases(const QString &buyerPubkey);
+    Q_INVOKABLE void storePurchasesByStore(const QString &storeId);
 
 signals:
     void daemonAddressChanged();
@@ -97,6 +98,7 @@ signals:
     void storeShowReceived(const QJsonObject &result);
     void storeSearchReceived(const QJsonObject &result);
     void storeMyPurchasesReceived(const QJsonObject &result);
+    void storePurchasesByStoreReceived(const QJsonObject &result);
 
 private:
     void rpcCall(const QString &method, const QJsonObject &params,

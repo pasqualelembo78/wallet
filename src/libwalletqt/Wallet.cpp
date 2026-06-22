@@ -60,6 +60,7 @@
 
 #include "qt/ScopeGuard.h"
 
+#include "string_tools.h"
 #include "cryptonote_core/mevatrust/mevatrust_tx_parser.h"
 #include <fstream>
 #include <ctime>
@@ -1308,6 +1309,36 @@ void Wallet::submitMevatrustTransactionAsync(const QString &extraHex, quint64 am
     });
 }
 
+void Wallet::submitMevatrustTransactionToAddressAsync(const QString &dstAddress, const QString &extraHex, quint64 amount)
+{
+    m_scheduler.run([this, dstAddress, extraHex, amount] {
+        std::string dstStd = dstAddress.toStdString();
+        std::string extraStd = extraHex.toStdString();
+        Monero::optional<uint64_t> amt(amount);
+        Monero::PendingTransaction *pt = m_walletImpl->createTransactionToAddressWithExtra(
+            dstStd, extraStd, amt, 0,
+            Monero::PendingTransaction::Priority_Low,
+            currentSubaddressAccount());
+        if (!pt || pt->status() != Monero::PendingTransaction::Status_Ok) {
+            QString err = pt ? QString::fromStdString(pt->errorString()) : "Failed to create transaction";
+            emit mevatrustTransactionCompleted(false, "", err);
+            if (pt) m_walletImpl->disposeTransaction(pt);
+            return;
+        }
+        bool success = pt->commit();
+        QStringList txids;
+        if (success) {
+            auto txList = pt->txid();
+            for (const auto &txid : txList)
+                txids.append(QString::fromStdString(txid));
+        }
+        emit mevatrustTransactionCompleted(success,
+            txids.isEmpty() ? "" : txids.first(),
+            success ? "" : QString::fromStdString(pt->errorString()));
+        m_walletImpl->disposeTransaction(pt);
+    });
+}
+
 // ── MevaTrust Transaction Building ──────────────────────────────────────
 
 namespace {
@@ -1685,8 +1716,13 @@ QString Wallet::buildValidatorPromotionExtra(const QString &nodeIdHex, const QSt
 // ── Store tx building ───────────────────────────────────────────────────
 
 QString Wallet::buildStoreCreateExtra(const QString &name, const QString &description,
-                                       const QString &url)
+                                       const QString &url,
+                                       bool euroEnabled, const QString &euroDetails,
+                                       quint8 mvcPercent, quint8 euroPercent)
 {
+    if (mvcPercent + euroPercent != 100 || mvcPercent == 0)
+        return {};
+
     crypto::public_key w_spk;
     if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
         return {};
@@ -1695,12 +1731,17 @@ QString Wallet::buildStoreCreateExtra(const QString &name, const QString &descri
         return {};
 
     cryptonote::tx_extra_mevatrust_store op{};
-    op.op          = cryptonote::tx_extra_mevatrust_store::STORE_CREATE;
-    op.store_id    = crypto::hash{};
-    op.name        = name.toStdString();
-    op.description = description.toStdString();
-    op.url         = url.toStdString();
-    op.owner_pubkey = w_spk;
+    op.op            = cryptonote::tx_extra_mevatrust_store::STORE_CREATE;
+    op.store_id      = crypto::hash{};
+    op.name          = name.toStdString();
+    op.description   = description.toStdString();
+    op.url           = url.toStdString();
+    op.payment_address = m_walletImpl->publicAddress();
+    op.euro_enabled  = euroEnabled;
+    op.euro_details  = euroDetails.toStdString();
+    op.mvc_percent   = mvcPercent;
+    op.euro_percent  = euroPercent;
+    op.owner_pubkey  = w_spk;
 
     const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
     crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
@@ -1712,7 +1753,9 @@ QString Wallet::buildStoreCreateExtra(const QString &name, const QString &descri
 }
 
 QString Wallet::buildStoreUpdateExtra(const QString &storeIdHex, const QString &name,
-                                       const QString &description, const QString &url)
+                                       const QString &description, const QString &url,
+                                       bool euroEnabled, const QString &euroDetails,
+                                       quint8 mvcPercent, quint8 euroPercent)
 {
     crypto::public_key w_spk;
     if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
@@ -1724,13 +1767,20 @@ QString Wallet::buildStoreUpdateExtra(const QString &storeIdHex, const QString &
     if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
         return {};
 
+    if (mvcPercent + euroPercent != 100 || mvcPercent == 0)
+        return {};
+
     cryptonote::tx_extra_mevatrust_store op{};
-    op.op          = cryptonote::tx_extra_mevatrust_store::STORE_UPDATE;
-    op.store_id    = sid;
-    op.name        = name.toStdString();
-    op.description = description.toStdString();
-    op.url         = url.toStdString();
-    op.owner_pubkey = w_spk;
+    op.op            = cryptonote::tx_extra_mevatrust_store::STORE_UPDATE;
+    op.store_id      = sid;
+    op.name          = name.toStdString();
+    op.description   = description.toStdString();
+    op.url           = url.toStdString();
+    op.euro_enabled  = euroEnabled;
+    op.euro_details  = euroDetails.toStdString();
+    op.mvc_percent   = mvcPercent;
+    op.euro_percent  = euroPercent;
+    op.owner_pubkey  = w_spk;
 
     const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
     crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
@@ -1743,8 +1793,12 @@ QString Wallet::buildStoreUpdateExtra(const QString &storeIdHex, const QString &
 
 QString Wallet::buildItemListExtra(const QString &storeIdHex, const QString &name,
                                     const QString &description, quint64 price,
-                                    const QString &category, const QString &metadata)
+                                    const QString &category, const QString &metadata,
+                                    const QString &paymentMode)
 {
+    if (price == 0)
+        return {};
+
     crypto::public_key w_spk;
     if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
         return {};
@@ -1763,6 +1817,7 @@ QString Wallet::buildItemListExtra(const QString &storeIdHex, const QString &nam
     op.price       = price;
     op.category    = category.toStdString();
     op.metadata    = metadata.toStdString();
+    op.payment_mode = paymentMode.toStdString();
     op.owner_pubkey = w_spk;
 
     const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
@@ -1804,7 +1859,148 @@ QString Wallet::buildItemDelistExtra(const QString &storeIdHex, const QString &i
     return QString::fromStdString(extra_to_hex(extra));
 }
 
-QString Wallet::buildItemBuyExtra(const QString &storeIdHex, const QString &itemIdHex)
+QString Wallet::buildItemBuyExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                   const QString &paymentMethod, const QString &euroRef,
+                                   quint64 euroAmount, quint64 quantity)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+    crypto::hash iid;
+    if (!epee::string_tools::hex_to_pod(itemIdHex.toStdString(), iid))
+        return {};
+
+    if (quantity == 0)
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op                    = cryptonote::tx_extra_mevatrust_store::ITEM_BUY;
+    op.store_id              = sid;
+    op.item_id               = iid;
+    op.quantity              = quantity;
+    op.buyer_pubkey          = w_spk;
+    op.buyer_payment_method  = paymentMethod.toStdString();
+    op.euro_ref              = euroRef.toStdString();
+    op.euro_amount           = euroAmount;
+    op.owner_pubkey          = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildStoreConfirmExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                        const QString &buyerPubkeyHex)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+    crypto::hash iid;
+    if (!epee::string_tools::hex_to_pod(itemIdHex.toStdString(), iid))
+        return {};
+    crypto::public_key bpk;
+    if (!epee::string_tools::hex_to_pod(buyerPubkeyHex.toStdString(), bpk))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op             = cryptonote::tx_extra_mevatrust_store::STORE_CONFIRM;
+    op.store_id       = sid;
+    op.item_id        = iid;
+    op.buyer_pubkey   = bpk;
+    op.seller_pubkey  = w_spk;
+    op.owner_pubkey   = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_confirm_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.seller_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildStoreCancelExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                       const QString &buyerPubkeyHex,
+                                       const QString &reason)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+    crypto::hash iid;
+    if (!epee::string_tools::hex_to_pod(itemIdHex.toStdString(), iid))
+        return {};
+    crypto::public_key bpk;
+    if (!epee::string_tools::hex_to_pod(buyerPubkeyHex.toStdString(), bpk))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op             = cryptonote::tx_extra_mevatrust_store::STORE_CANCEL;
+    op.store_id       = sid;
+    op.item_id        = iid;
+    op.buyer_pubkey   = bpk;
+    op.seller_pubkey  = w_spk;
+    op.cancel_reason  = reason.toStdString();
+    op.owner_pubkey   = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_confirm_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.seller_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildStoreDeactivateExtra(const QString &storeIdHex)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op             = cryptonote::tx_extra_mevatrust_store::STORE_DEACTIVATE;
+    op.store_id       = sid;
+    op.owner_pubkey   = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildBuyerCancelExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                       const QString &reason)
 {
     crypto::public_key w_spk;
     if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
@@ -1820,13 +2016,45 @@ QString Wallet::buildItemBuyExtra(const QString &storeIdHex, const QString &item
         return {};
 
     cryptonote::tx_extra_mevatrust_store op{};
-    op.op           = cryptonote::tx_extra_mevatrust_store::ITEM_BUY;
-    op.store_id     = sid;
-    op.item_id      = iid;
-    op.buyer_pubkey = w_spk;
-    op.owner_pubkey = w_spk;
+    op.op             = cryptonote::tx_extra_mevatrust_store::BUYER_CANCEL;
+    op.store_id       = sid;
+    op.item_id        = iid;
+    op.buyer_pubkey   = w_spk;
+    op.cancel_reason  = reason.toStdString();
+    op.owner_pubkey   = w_spk;
 
-    const crypto::hash msg_hash = cryptonote::mevatrust::store_message_hash(op);
+    const crypto::hash msg_hash = cryptonote::mevatrust::buyer_action_message_hash(op);
+    crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
+
+    std::vector<uint8_t> extra;
+    if (!cryptonote::mevatrust::build_mevatrust_store_extra(op, extra))
+        return {};
+    return QString::fromStdString(extra_to_hex(extra));
+}
+
+QString Wallet::buildBuyerConfirmReceiptExtra(const QString &storeIdHex, const QString &itemIdHex)
+{
+    crypto::public_key w_spk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->publicSpendKey(), w_spk))
+        return {};
+    crypto::secret_key w_ssk;
+    if (!epee::string_tools::hex_to_pod(m_walletImpl->secretSpendKey(), w_ssk))
+        return {};
+    crypto::hash sid;
+    if (!epee::string_tools::hex_to_pod(storeIdHex.toStdString(), sid))
+        return {};
+    crypto::hash iid;
+    if (!epee::string_tools::hex_to_pod(itemIdHex.toStdString(), iid))
+        return {};
+
+    cryptonote::tx_extra_mevatrust_store op{};
+    op.op             = cryptonote::tx_extra_mevatrust_store::BUYER_CONFIRM_RECEIPT;
+    op.store_id       = sid;
+    op.item_id        = iid;
+    op.buyer_pubkey   = w_spk;
+    op.owner_pubkey   = w_spk;
+
+    const crypto::hash msg_hash = cryptonote::mevatrust::buyer_action_message_hash(op);
     crypto::generate_signature(msg_hash, w_spk, w_ssk, op.owner_sig);
 
     std::vector<uint8_t> extra;

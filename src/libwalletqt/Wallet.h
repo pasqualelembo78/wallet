@@ -269,6 +269,8 @@ public:
 
     //! Create and commit a MevaTrust transaction with custom tx_extra blob (hex-encoded)
     Q_INVOKABLE void submitMevatrustTransactionAsync(const QString &extraHex, quint64 amount = 1000000000ULL);
+    //! Create and commit a MevaTrust transaction TO a specific address with custom tx_extra (for store purchases)
+    Q_INVOKABLE void submitMevatrustTransactionToAddressAsync(const QString &dstAddress, const QString &extraHex, quint64 amount);
 
     //! MevaTrust transaction building methods
     //! Read node_signing_key file and derive node public key (hex)
@@ -296,20 +298,42 @@ public:
     //! Build validator promotion tx_extra blob (hex)
     Q_INVOKABLE QString buildValidatorPromotionExtra(const QString &nodeIdHex, const QString &nodePubkeyHex);
     // ── Store tx building ────────────────────────────────────────────────
-    //! Build store CREATE tx_extra blob (hex)
+    //! Build store CREATE tx_extra blob (hex) — con parametri euro
     Q_INVOKABLE QString buildStoreCreateExtra(const QString &name, const QString &description,
-                                              const QString &url = "");
-    //! Build store UPDATE tx_extra blob (hex)
+                                              const QString &url = "",
+                                              bool euroEnabled = false, const QString &euroDetails = "",
+                                              quint8 mvcPercent = 100, quint8 euroPercent = 0);
+    //! Build store UPDATE tx_extra blob (hex) — con parametri euro
     Q_INVOKABLE QString buildStoreUpdateExtra(const QString &storeIdHex, const QString &name,
-                                              const QString &description, const QString &url = "");
-    //! Build item LIST tx_extra blob (hex)
+                                              const QString &description, const QString &url = "",
+                                              bool euroEnabled = false, const QString &euroDetails = "",
+                                              quint8 mvcPercent = 100, quint8 euroPercent = 0);
+    //! Build item LIST tx_extra blob (hex) — con payment_mode
     Q_INVOKABLE QString buildItemListExtra(const QString &storeIdHex, const QString &name,
                                            const QString &description, quint64 price,
-                                           const QString &category = "", const QString &metadata = "");
+                                           const QString &category = "", const QString &metadata = "",
+                                           const QString &paymentMode = "mvc_only");
     //! Build item DELIST tx_extra blob (hex)
     Q_INVOKABLE QString buildItemDelistExtra(const QString &storeIdHex, const QString &itemIdHex);
-    //! Build item BUY tx_extra blob (hex)
-    Q_INVOKABLE QString buildItemBuyExtra(const QString &storeIdHex, const QString &itemIdHex);
+    //! Build item BUY tx_extra blob (hex) — con metodo pagamento, ref euro, qta
+    Q_INVOKABLE QString buildItemBuyExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                          const QString &paymentMethod = "mvc_only",
+                                          const QString &euroRef = "", quint64 euroAmount = 0,
+                                          quint64 quantity = 1);
+    //! Build STORE_CONFIRM tx_extra blob (hex) — venditore conferma acquisto
+    Q_INVOKABLE QString buildStoreConfirmExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                               const QString &buyerPubkeyHex);
+    //! Build STORE_CANCEL tx_extra blob (hex) — venditore annulla acquisto
+    Q_INVOKABLE QString buildStoreCancelExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                              const QString &buyerPubkeyHex,
+                                              const QString &reason = "");
+    //! Build STORE_DEACTIVATE tx_extra blob (hex)
+    Q_INVOKABLE QString buildStoreDeactivateExtra(const QString &storeIdHex);
+    //! Build BUYER_CANCEL tx_extra blob (hex) — acquirente annulla acquisto pendente
+    Q_INVOKABLE QString buildBuyerCancelExtra(const QString &storeIdHex, const QString &itemIdHex,
+                                              const QString &reason = "");
+    //! Build BUYER_CONFIRM_RECEIPT tx_extra blob (hex)
+    Q_INVOKABLE QString buildBuyerConfirmReceiptExtra(const QString &storeIdHex, const QString &itemIdHex);
     //! Save node_id to ~/.mevacoin/mevatrust/node_id
     Q_INVOKABLE void saveNodeIdToFile(const QString &nodeIdHex);
     //! Read saved node_id from ~/.mevacoin/mevatrust/node_id

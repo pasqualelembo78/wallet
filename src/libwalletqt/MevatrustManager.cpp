@@ -394,3 +394,12 @@ void MevatrustManager::storeMyPurchases(const QString &buyerPubkey)
         emit storeMyPurchasesReceived(result);
     });
 }
+
+void MevatrustManager::storePurchasesByStore(const QString &storeId)
+{
+    QJsonObject params;
+    params["store_id"] = storeId;
+    rpcCall("store_purchases_by_store", params, [this](const QJsonObject &result) {
+        emit storePurchasesByStoreReceived(result);
+    });
+}
