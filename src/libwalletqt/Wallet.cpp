@@ -1736,7 +1736,7 @@ QString Wallet::buildStoreCreateExtra(const QString &name, const QString &descri
     op.name          = name.toStdString();
     op.description   = description.toStdString();
     op.url           = url.toStdString();
-    op.payment_address = m_walletImpl->publicAddress();
+    op.payment_address = m_walletImpl->mainAddress();
     op.euro_enabled  = euroEnabled;
     op.euro_details  = euroDetails.toStdString();
     op.mvc_percent   = mvcPercent;
