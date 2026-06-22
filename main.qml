@@ -93,6 +93,12 @@ ApplicationWindow {
     property int daemonStartStopInProgress: 0
     property alias toolTip: toolTip
     property string walletName
+
+    // Auto-failover: tenta nodo successivo quando connessione cade
+    property int autoReconnectNodeIndex: -1      // -1 = disabilitato
+    property int autoReconnectAttempts: 0
+    readonly property int autoReconnectMaxAttempts: 6  // per nodo
+    property int autoReconnectTotalTries: 0
     property bool viewOnly: false
     property bool foundNewBlock: false
     property bool qrScannerEnabled: (typeof builtWithScanner != "undefined") && builtWithScanner
@@ -528,8 +534,39 @@ ApplicationWindow {
         console.log("Wallet connection status changed " + status)
         middlePanel.updateStatus();
         leftPanel.networkStatus.connected = status
+
+        if (status == Wallet.ConnectionStatus_Connected) {
+            autoReconnectAttempts = 0;
+        }
+
         if (status == Wallet.ConnectionStatus_Disconnected) {
             firstBlockSeen = 0;
+        }
+
+        // Auto-failover remote node
+        if (status == Wallet.ConnectionStatus_Disconnected
+            && persistentSettings.useRemoteNode
+            && remoteNodesModel.count > 1
+            && appWindow.autoReconnectAttempts < appWindow.autoReconnectMaxAttempts) {
+            appWindow.autoReconnectAttempts++;
+            appWindow.autoReconnectTotalTries++;
+            autoReconnectTimer.start();
+            return;
+        }
+        if (status == Wallet.ConnectionStatus_Disconnected
+            && persistentSettings.useRemoteNode
+            && appWindow.autoReconnectAttempts >= appWindow.autoReconnectMaxAttempts) {
+            appWindow.showStatusMessage(
+                qsTr("Tutti i nodi remoti non rispondono. Riprovo tra 30 secondi..."), 5);
+            // Reset dopo timeout più lungo per riprovare tutto il ciclo
+            Qt.callLater(function() {
+                appWindow.autoReconnectAttempts = 0;
+                appWindow.autoReconnectNodeIndex = remoteNodesModel.selected;
+                autoReconnectTimer.interval = 5000;
+                autoReconnectTimer.start();
+                autoReconnectTimer.interval = 3000;
+            });
+            return;
         }
 
         // If wallet isnt connected, advanced wallet mode and no daemon is running - Ask
@@ -541,7 +578,7 @@ ApplicationWindow {
             });
         }
         // initialize transaction history once wallet is initialized first time;
-        if (!walletInitialized) {
+        if (!walletInitialized && status == Wallet.ConnectionStatus_Connected) {
             currentWallet.history.refresh(currentWallet.currentSubaddressAccount)
             walletInitialized = true
 
@@ -737,7 +774,9 @@ ApplicationWindow {
     function connectRemoteNode() {
         console.log("connecting remote node");
 
-        /* p2pool removed */
+        // Reset auto-failover state
+        autoReconnectNodeIndex = remoteNodesModel.selected;
+        autoReconnectAttempts = 0;
 
         const callback = function() {
             persistentSettings.useRemoteNode = true;
@@ -1671,6 +1710,8 @@ ApplicationWindow {
             if (currentWallet) {
                 currentWallet.setDaemonLogin(remoteNode.username, remoteNode.password);
                 currentWallet.setTrustedDaemon(remoteNode.trusted);
+                appWindow.autoReconnectNodeIndex = index;
+                appWindow.autoReconnectAttempts = 0;
                 appWindow.connectRemoteNode();
             }
         }
@@ -2158,7 +2199,14 @@ ApplicationWindow {
                 width: 10; height: 10; radius: 5
                 anchors.right: parent.right; anchors.rightMargin: 16
                 anchors.verticalCenter: parent.verticalCenter
-                color: disconnected ? "#FF4444" : (!daemonSynced ? "#FFaa00" : "#2EB358")
+                color: {
+                    var s = (typeof leftPanel !== "undefined" && leftPanel.networkStatus)
+                        ? leftPanel.networkStatus.connected : Wallet.ConnectionStatus_Disconnected;
+                    if (s === Wallet.ConnectionStatus_Connected) {
+                        return appWindow.daemonSynced ? "#2EB358" : "#FFaa00";
+                    }
+                    return "#FF4444";
+                }
 
                 // Tap area larger than the dot for better usability
                 MouseArea {
@@ -2329,9 +2377,13 @@ ApplicationWindow {
 
                     Rectangle {
                         width: parent.width; height: 48; color: "transparent"
+                        property var _cs: (typeof leftPanel !== "undefined" && leftPanel.networkStatus)
+                            ? leftPanel.networkStatus.connected : Wallet.ConnectionStatus_Disconnected
+                        property bool _conn: _cs === Wallet.ConnectionStatus_Connected
                         Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 12
-                            Rectangle { width: 10; height: 10; radius: 5; anchors.verticalCenter: parent.verticalCenter; color: disconnected ? "#FF4444" : (!daemonSynced ? "#FFaa00" : "#2EB358") }
-                            Text { text: disconnected ? qsTr("Disconnected") : (!daemonSynced ? qsTr("Synchronizing...") : qsTr("Connected")); font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 13; color: MevaCoinComponents.Style.dimmedFontColor; anchors.verticalCenter: parent.verticalCenter }
+                            Rectangle { width: 10; height: 10; radius: 5; anchors.verticalCenter: parent.verticalCenter;
+                                color: !_conn ? "#FF4444" : (appWindow.daemonSynced ? "#2EB358" : "#FFaa00") }
+                            Text { text: !_conn ? qsTr("Disconnected") : (!appWindow.daemonSynced ? qsTr("Synchronizing...") : qsTr("Connected")); font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 13; color: MevaCoinComponents.Style.dimmedFontColor; anchors.verticalCenter: parent.verticalCenter }
                         }
                         MouseArea {
                             anchors.fill: parent
@@ -2496,6 +2548,41 @@ ApplicationWindow {
         running: appWindow.walletMode < 2 && currentWallet != undefined && daemonStartStopInProgress == 0
         repeat: true
         onTriggered: appWindow.checkSimpleModeConnection()
+    }
+
+    Timer {
+        // Auto-failover: prova nodo successivo dopo delay
+        id: autoReconnectTimer
+        interval: 3000
+        running: false
+        repeat: false
+        onTriggered: {
+            appWindow.autoReconnectNodeIndex = (appWindow.autoReconnectNodeIndex + 1) % remoteNodesModel.count;
+            var node = remoteNodesModel.get(appWindow.autoReconnectNodeIndex);
+            if (!node) {
+                appWindow.autoReconnectAttempts = 0;
+                return;
+            }
+            console.log("Auto-failover: trying node " + appWindow.autoReconnectNodeIndex + " = " + node.address);
+            remoteNodesModel.selected = appWindow.autoReconnectNodeIndex;
+            currentDaemonAddress = node.address;
+            mevatrustManager.daemonAddress = currentDaemonAddress;
+            mevatrustManager.daemonUsername = node.username;
+            mevatrustManager.daemonPassword = node.password;
+            currentWallet.setDaemonLogin(node.username, node.password);
+            currentWallet.initAsync(
+                currentDaemonAddress,
+                isTrustedDaemon(),
+                0,
+                false,
+                false,
+                0,
+                persistentSettings.getWalletProxyAddress());
+            walletManager.setDaemonAddressAsync(currentDaemonAddress);
+            appWindow.showStatusMessage(
+                qsTr("Tentativo ") + (appWindow.autoReconnectAttempts) + "/" + appWindow.autoReconnectMaxAttempts
+                + " — " + node.address, 3);
+        }
     }
 
     Rectangle {

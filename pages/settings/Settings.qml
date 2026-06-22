@@ -53,6 +53,7 @@ ColumnLayout {
         ["Wallet",  "Wallet",    true],
         ["UI",      "Interface", true],
         ["Node",    "Node",      false],
+        ["Debug",   "Debug",     false],
         ["Info",    "Info",      true],
     ]
 
@@ -159,6 +160,7 @@ ColumnLayout {
                         ["Wallet", "Wallet"],
                         ["UI",     "Interface"],
                         ["Node",   "Node"],
+                        ["Debug",  "Debug"],
                         ["Info",   "Info"],
                     ]
 
@@ -250,6 +252,12 @@ ColumnLayout {
             onSelected: settingsStateView.state = "Node"
         }
         MevaCoinComponents.NavbarItem {
+            active: settingsStateView.state == "Debug"
+            text: qsTr("Debug") + translationManager.emptyString
+            visible: appWindow.walletMode >= 2
+            onSelected: settingsStateView.state = "Debug"
+        }
+        MevaCoinComponents.NavbarItem {
             active: settingsStateView.state == "Log"
             text: qsTr("Log") + translationManager.emptyString
             onSelected: settingsStateView.state = "Log"
@@ -269,6 +277,7 @@ ColumnLayout {
         property SettingsWallet settingsWalletView: SettingsWallet { }
         property SettingsLayout settingsLayoutView: SettingsLayout { }
         property SettingsNode settingsNodeView: SettingsNode { }
+        property SettingsNodeDebug settingsNodeDebugView: SettingsNodeDebug { }
         property SettingsLog settingsLogView: SettingsLog { }
         property SettingsInfo settingsInfoView: SettingsInfo { }
         Layout.fillWidth: true
@@ -312,6 +321,10 @@ ColumnLayout {
                 name: "Info"
                 PropertyChanges { target: settingsStateView; currentView: settingsStateView.settingsInfoView }
                 PropertyChanges { target: settingsPage; settingsHeight: settingsStateView.settingsInfoView.infoHeight + 140 }
+            }, State {
+                name: "Debug"
+                PropertyChanges { target: settingsStateView; currentView: settingsStateView.settingsNodeDebugView }
+                PropertyChanges { target: settingsPage; settingsHeight: settingsStateView.settingsNodeDebugView.debugHeight + 140 }
             }
         ]
 

@@ -82,7 +82,7 @@ Rectangle {
                 if(item.connected == Wallet.ConnectionStatus_Connected){
                     return 1
                 } else {
-                    MevaCoinComponents.Style.blackTheme ? 0.5 : 0.3
+                    return MevaCoinComponents.Style.blackTheme ? 0.5 : 0.3
                 }
             }
 

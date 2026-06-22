@@ -191,6 +191,7 @@
         <file>pages/settings/SettingsLayout.qml</file>
         <file>pages/settings/SettingsInfo.qml</file>
         <file>pages/settings/SettingsNetwork.qml</file>
+        <file>pages/settings/SettingsNodeDebug.qml</file>
         <file>components/WarningBox.qml</file>
         <file>pages/merchant/Merchant.qml</file>
         <file>pages/merchant/MerchantCheckbox.qml</file>

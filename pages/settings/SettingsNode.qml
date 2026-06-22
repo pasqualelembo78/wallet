@@ -101,9 +101,24 @@ Rectangle{
             }
         }
 
-        // ── SEED NODES RAPIDI PER ANDROID ────────────────────
+        // ── ACCESSO RAPIDO AL DEBUG ─────────────────────────
+        MevaCoinComponents.StandardButton {
+            Layout.topMargin: 16
+            Layout.fillWidth: true
+            small: false
+            text: "🔍 " + qsTr("Monitor Connessioni (Debug)") + translationManager.emptyString
+            onClicked: {
+                if (middlePanel.settingsView.settingsStateViewState !== "Debug") {
+                    middlePanel.settingsView.settingsStateViewState = "Debug";
+                } else {
+                    middlePanel.settingsView.settingsStateViewState = "Node";
+                }
+            }
+        }
+
+        // ── SEED NODES RAPIDI ────────────────────
         ColumnLayout {
-            visible: isAndroid
+            visible: true
             spacing: 8
             Layout.topMargin: 16
             Layout.fillWidth: true
