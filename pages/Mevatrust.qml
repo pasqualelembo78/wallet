@@ -1408,11 +1408,19 @@ Rectangle {
                     RowLayout { spacing: 10
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: csMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9][0-9]?)") }; enabled: csEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit {
+                                id: csMvcPct; Layout.fillWidth: true; text: "100"
+                                validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }
+                                enabled: csEuroEnabled.checked
+                            }
                         }
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: csEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9]?[0-9])") }; enabled: csEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit {
+                                id: csEuroPct; Layout.fillWidth: true; text: "0"
+                                validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }
+                                enabled: csEuroEnabled.checked
+                            }
                         }
                     }
                     MevaCoinComponents.Label { text: qsTr("MVC% must be > 0, MVC% + Euro% must = 100") + translationManager.emptyString; fontSize: 9; opacity: 0.5; visible: csEuroEnabled.checked }
@@ -1517,11 +1525,19 @@ Rectangle {
                     RowLayout { spacing: 10
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: usMvcPct; Layout.fillWidth: true; text: "100"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9][0-9]?)") }; enabled: usEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit {
+                                id: usMvcPct; Layout.fillWidth: true; text: "100"
+                                validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }
+                                enabled: usEuroEnabled.checked
+                            }
                         }
                         ColumnLayout { Layout.fillWidth: true
                             MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
-                            MevaCoinComponents.LineEdit { id: usEuroPct; Layout.fillWidth: true; text: "0"; validator: RegExpValidator { regExp: new RegExp("(100|[1-9]?[0-9])") }; enabled: usEuroEnabled.checked }
+                            MevaCoinComponents.LineEdit {
+                                id: usEuroPct; Layout.fillWidth: true; text: "0"
+                                validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }
+                                enabled: usEuroEnabled.checked
+                            }
                         }
                     }
                 }
@@ -1981,7 +1997,11 @@ Rectangle {
             MevaCoinComponents.LineEdit { id: biEuroRef; Layout.fillWidth: true; placeholderText: qsTr("Transaction ID or reference") + translationManager.emptyString; visible: biPaymentMethod.currentIndex === 1 }
 
             MevaCoinComponents.Label { text: qsTr("Euro Amount (cents):") + translationManager.emptyString; fontSize: 11; opacity: 0.6; visible: biPaymentMethod.currentIndex === 1 }
-            MevaCoinComponents.LineEdit { id: biEuroAmount; Layout.fillWidth: true; placeholderText: "0"; validator: RegExpValidator { regExp: /[0-9]*/ }; visible: biPaymentMethod.currentIndex === 1 }
+            MevaCoinComponents.LineEdit {
+                id: biEuroAmount; Layout.fillWidth: true; placeholderText: "0"
+                validator: RegExpValidator { regExp: /[0-9]*/ }
+                visible: biPaymentMethod.currentIndex === 1
+            }
 
             RowLayout { spacing: 10
                 Item { Layout.fillWidth: true }
