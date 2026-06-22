@@ -69,7 +69,7 @@ Rectangle {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: nodeConnLayout.implicitHeight + 12
-            color: Qt.rgla(0,0.5,1,0.08)
+            color: Qt.rgba(0,0.5,1,0.08)
             radius: 6
             border.color: Qt.rgba(0,0.5,1,0.2)
             border.width: 1
@@ -640,7 +640,7 @@ Rectangle {
                 id: regPort
                 Layout.fillWidth: true
                 placeholderText: qsTr("Optional: node port") + translationManager.emptyString
-                validator: RegExpValidator { regExp: /[0-9]*/ }
+                validator: RegExpValidator { regExp: new RegExp("[0-9]*") }
             }
 
             Rectangle {
@@ -687,7 +687,7 @@ Rectangle {
                         currentWallet.saveNodeIdToFile(nodeId);
                         currentWallet.submitMevatrustTransactionAsync(extraHex);
                         // Re-enable after a timeout
-                        registerNodeDialog.closeTimer.restart();
+                        regBtnTimer.restart();
                     }
                 }
             }
@@ -1410,7 +1410,7 @@ Rectangle {
                             MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
                             MevaCoinComponents.LineEdit {
                                 id: csMvcPct; Layout.fillWidth: true; text: "100"
-                                validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }
+                                validator: RegExpValidator { regExp: new RegExp("(100|[1-9][0-9]?)") }
                                 enabled: csEuroEnabled.checked
                             }
                         }
@@ -1418,7 +1418,7 @@ Rectangle {
                             MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
                             MevaCoinComponents.LineEdit {
                                 id: csEuroPct; Layout.fillWidth: true; text: "0"
-                                validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }
+                                validator: RegExpValidator { regExp: new RegExp("(100|[1-9]?[0-9])") }
                                 enabled: csEuroEnabled.checked
                             }
                         }
@@ -1527,7 +1527,7 @@ Rectangle {
                             MevaCoinComponents.Label { text: qsTr("MVC %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
                             MevaCoinComponents.LineEdit {
                                 id: usMvcPct; Layout.fillWidth: true; text: "100"
-                                validator: RegExpValidator { regExp: /(100|[1-9][0-9]?)/ }
+                                validator: RegExpValidator { regExp: new RegExp("(100|[1-9][0-9]?)") }
                                 enabled: usEuroEnabled.checked
                             }
                         }
@@ -1535,7 +1535,7 @@ Rectangle {
                             MevaCoinComponents.Label { text: qsTr("Euro %") + translationManager.emptyString; fontSize: 10; opacity: 0.6 }
                             MevaCoinComponents.LineEdit {
                                 id: usEuroPct; Layout.fillWidth: true; text: "0"
-                                validator: RegExpValidator { regExp: /(100|[1-9]?[0-9])/ }
+                                validator: RegExpValidator { regExp: new RegExp("(100|[1-9]?[0-9])") }
                                 enabled: usEuroEnabled.checked
                             }
                         }
@@ -1876,7 +1876,7 @@ Rectangle {
             RowLayout { spacing: 10
                 ColumnLayout { Layout.fillWidth: true
                     MevaCoinComponents.Label { text: qsTr("Price (atomic units):") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
-                    MevaCoinComponents.LineEdit { id: liPrice; Layout.fillWidth: true; placeholderText: "1000000000000"; validator: RegExpValidator { regExp: /[0-9]*/ } }
+                    MevaCoinComponents.LineEdit { id: liPrice; Layout.fillWidth: true; placeholderText: "1000000000000"; validator: RegExpValidator { regExp: new RegExp("[0-9]*") } }
                 }
                 ColumnLayout { Layout.fillWidth: true
                     MevaCoinComponents.Label { text: qsTr("Category:") + translationManager.emptyString; fontSize: 11; opacity: 0.6 }
@@ -1981,7 +1981,7 @@ Rectangle {
                 id: biQuantity
                 Layout.fillWidth: true
                 text: "1"
-                validator: RegExpValidator { regExp: /[1-9][0-9]*/ }
+                validator: RegExpValidator { regExp: new RegExp("[1-9][0-9]*") }
             }
 
             MevaCoinComponents.Label { text: qsTr("Payment Method:") + translationManager.emptyString; fontSize: 12 }
@@ -1999,7 +1999,7 @@ Rectangle {
             MevaCoinComponents.Label { text: qsTr("Euro Amount (cents):") + translationManager.emptyString; fontSize: 11; opacity: 0.6; visible: biPaymentMethod.currentIndex === 1 }
             MevaCoinComponents.LineEdit {
                 id: biEuroAmount; Layout.fillWidth: true; placeholderText: "0"
-                validator: RegExpValidator { regExp: /[0-9]*/ }
+                validator: RegExpValidator { regExp: new RegExp("[0-9]*") }
                 visible: biPaymentMethod.currentIndex === 1
             }
 
@@ -2355,8 +2355,8 @@ Rectangle {
                     recentAwardsRepeater.model.append({
                         badgeName: n.badge_types && n.badge_types.length > 0 ? n.badge_types[0] : "Active",
                         nodeId: shortId,
-                        badgeColor: badgeCount > 3 ? MevaCoinComponents.Style.wookeyGreen :
-                                    badgeCount > 1 ? MevaCoinComponents.Style.orange : MevaCoinComponents.Style.green
+                        badgeColor: badgesCount > 3 ? MevaCoinComponents.Style.wookeyGreen :
+                                    badgesCount > 1 ? MevaCoinComponents.Style.orange : MevaCoinComponents.Style.green
                     });
                 }
             }
@@ -2365,9 +2365,9 @@ Rectangle {
         // Badge requirements
         onBadgeRequirementsReceived: {
             badgeGalleryRepeater.model.clear();
-            var badges = badges.badges || [];
-            for (var i = 0; i < badges.length; i++) {
-                var b = badges[i];
+            var badgeList = (badges && badges.badges) || [];
+            for (var i = 0; i < badgeList.length; i++) {
+                var b = badgeList[i];
                 badgeGalleryRepeater.model.append({
                     badgeName: b.name || b.type_name || "Badge",
                     badgeDescription: b.description || b.details || "",
@@ -2431,10 +2431,10 @@ Rectangle {
 
         onNodeBadgesReceived: {
             badgeRepeater.model.clear();
-            var badges = badges.badges || [];
+            var badgeList = (badges && badges.badges) || [];
             var count = 0;
-            for (var i = 0; i < badges.length; i++) {
-                var b = badges[i];
+            for (var i = 0; i < badgeList.length; i++) {
+                var b = badgeList[i];
                 var earned = b.earned !== false;
                 if (earned) count++;
                 badgeRepeater.model.append({
@@ -2445,7 +2445,7 @@ Rectangle {
                     earnedHeight: b.awarded_height || 0
                 });
             }
-            myBadgeCount.text = count + "/" + badges.length;
+            myBadgeCount.text = count + "/" + badgeList.length;
             dashBadges.text = String(count);
         }
 

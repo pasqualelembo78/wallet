@@ -56,6 +56,7 @@ Rectangle {
     signal accepted()
     signal rejected()
     signal closeCallback();
+    signal opened()
 
     // background
     MevaCoinEffects.GradientBackground {
@@ -86,6 +87,7 @@ Rectangle {
         root.y = 100
         root.z = 11
         root.visible = true;
+        opened();
     }
 
     function close() {
