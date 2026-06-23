@@ -414,7 +414,10 @@ ApplicationWindow {
         middlePanel.getProofClicked.connect(handleGetProof);
         middlePanel.checkProofClicked.connect(handleCheckProof);
 
-        persistentSettings.restore_height = currentWallet.walletCreationHeight;
+        // allow mismatched daemon version
+        currentWallet.allowMismatchedDaemonVersion(true);
+
+        persistentSettings.restore_height = 0;
 
         console.log("Recovering from seed: ", persistentSettings.is_recovering)
         console.log("restore Height", persistentSettings.restore_height)
@@ -425,6 +428,7 @@ ApplicationWindow {
             currentWallet.setDaemonLogin(remoteNode.username, remoteNode.password);
         } else {
             currentDaemonAddress = localDaemonAddress;
+            currentWallet.setDaemonLogin(persistentSettings.daemonUsername, persistentSettings.daemonPassword);
         }
 
         console.log("initializing with daemon address: ", currentDaemonAddress)
@@ -433,6 +437,9 @@ ApplicationWindow {
             const rn = remoteNodesModel.currentRemoteNode();
             mevatrustManager.daemonUsername = rn.username;
             mevatrustManager.daemonPassword = rn.password;
+        } else {
+            mevatrustManager.daemonUsername = persistentSettings.daemonUsername;
+            mevatrustManager.daemonPassword = persistentSettings.daemonPassword;
         }
         currentWallet.initAsync(
             currentDaemonAddress,
@@ -789,6 +796,7 @@ ApplicationWindow {
             mevatrustManager.daemonAddress = currentDaemonAddress;
             mevatrustManager.daemonUsername = remoteNode.username;
             mevatrustManager.daemonPassword = remoteNode.password;
+            currentWallet.allowMismatchedDaemonVersion(true);
             currentWallet.setDaemonLogin(remoteNode.username, remoteNode.password);
             currentWallet.initAsync(
                 currentDaemonAddress,
@@ -819,9 +827,10 @@ ApplicationWindow {
         persistentSettings.useRemoteNode = false;
         currentDaemonAddress = localDaemonAddress
         mevatrustManager.daemonAddress = currentDaemonAddress;
-        mevatrustManager.daemonUsername = "";
-        mevatrustManager.daemonPassword = "";
-        currentWallet.setDaemonLogin("", "");
+        mevatrustManager.daemonUsername = persistentSettings.daemonUsername;
+        mevatrustManager.daemonPassword = persistentSettings.daemonPassword;
+        currentWallet.allowMismatchedDaemonVersion(true);
+        currentWallet.setDaemonLogin(persistentSettings.daemonUsername, persistentSettings.daemonPassword);
         currentWallet.initAsync(
             currentDaemonAddress,
             isTrustedDaemon(),
@@ -1527,7 +1536,9 @@ ApplicationWindow {
             }
         } else console.log("qrScannerEnabled disabled");
 
-        if(!walletsFound()) {
+        if (persistentSettings.loginUsername !== "") {
+            rootItem.state = "login"
+        } else if(!walletsFound()) {
             wizard.wizardState = "wizardLanguage";
             rootItem.state = "wizard"
         } else {
@@ -1625,6 +1636,9 @@ ApplicationWindow {
         property string savedWalletPassword: ""    // stored password (plain, device-local)
 
         property string mevatrust_node_id: ""      // saved My Node ID for MevaTrust
+
+        property string loginUsername: ""
+        property string loginPassword: ""
 
         property bool fiatPriceEnabled: false
         property bool fiatPriceToggle: false
@@ -1973,15 +1987,24 @@ ApplicationWindow {
         state: "wizard"
         states: [
             State {
+                name: "login"
+                PropertyChanges { target: middlePanel; visible: false }
+                PropertyChanges { target: wizard; visible: false }
+                PropertyChanges { target: loginScreen; visible: true }
+                PropertyChanges { target: resizeArea; visible: true }
+                PropertyChanges { target: titleBar; state: "essentials" }
+            }, State {
                 name: "wizard"
                 PropertyChanges { target: middlePanel; visible: false }
                 PropertyChanges { target: wizard; visible: true }
+                PropertyChanges { target: loginScreen; visible: false }
                 PropertyChanges { target: resizeArea; visible: true }
                 PropertyChanges { target: titleBar; state: "essentials" }
             }, State {
                 name: "normal"
                 PropertyChanges { target: middlePanel; visible: true }
                 PropertyChanges { target: wizard; visible: false }
+                PropertyChanges { target: loginScreen; visible: false }
                 PropertyChanges { target: resizeArea; visible: true }
                 PropertyChanges { target: titleBar; state: "default" }
             }
@@ -2051,6 +2074,12 @@ ApplicationWindow {
                     middlePanel.state = "Mevatrust";
                     middlePanel.flickable.contentY = 0;
                 }
+
+                onNodeMonitorClicked: {
+                    middlePanel.state = "Settings";
+                    middlePanel.settingsView.settingsStateViewState = "Debug";
+                    middlePanel.flickable.contentY = 0;
+                }
             }
 
             MiddlePanel {
@@ -2071,6 +2100,23 @@ ApplicationWindow {
                 onUseMevaCoinClicked: {
                     rootItem.state = "normal";
                     appWindow.openWallet("wizard");
+                }
+            }
+
+            LoginScreen {
+                id: loginScreen
+                anchors.fill: parent
+                visible: false
+                isSetup: persistentSettings.loginUsername === ""
+                onLoginSucceeded: {
+                    rootItem.state = "normal"
+                    if (walletsFound()) {
+                        logger.resetLogFilePath(persistentSettings.portable);
+                        openWallet("login");
+                    } else {
+                        wizard.wizardState = "wizardLanguage";
+                        rootItem.state = "wizard"
+                    }
                 }
             }
         }
@@ -2372,6 +2418,10 @@ ApplicationWindow {
                     Rectangle { width: parent.width; height: 52; color: middlePanel.state === "Mevatrust" ? "#20FFFFFF" : "transparent"
                         Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.shieldAlt; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.state === "Mevatrust" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("MevaTrust") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.state === "Mevatrust" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }
                         MouseArea { anchors.fill: parent; onClicked: mobileNavigate("Mevatrust") } }
+                    // Node Monitor
+                    Rectangle { width: parent.width; height: 52; color: middlePanel.settingsView.settingsStateViewState === "Debug" && middlePanel.state === "Settings" ? "#20FFFFFF" : "transparent"
+                        Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.server; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.settingsView.settingsStateViewState === "Debug" && middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("Node Monitor") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.settingsView.settingsStateViewState === "Debug" && middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }
+                        MouseArea { anchors.fill: parent; onClicked: { middlePanel.state = "Settings"; middlePanel.settingsView.settingsStateViewState = "Debug"; middlePanel.flickable.contentY = 0; mobileDrawerOpen = false; } } }
                     // Settings
                     Rectangle { width: parent.width; height: 52; color: middlePanel.state === "Settings" ? "#20FFFFFF" : "transparent"
                         Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.cog; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("Settings") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }
@@ -2573,6 +2623,7 @@ ApplicationWindow {
             mevatrustManager.daemonAddress = currentDaemonAddress;
             mevatrustManager.daemonUsername = node.username;
             mevatrustManager.daemonPassword = node.password;
+            currentWallet.allowMismatchedDaemonVersion(true);
             currentWallet.setDaemonLogin(node.username, node.password);
             currentWallet.initAsync(
                 currentDaemonAddress,

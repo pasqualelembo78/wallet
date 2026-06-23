@@ -547,6 +547,37 @@ Rectangle{
                 }
             }
 
+            MevaCoinComponents.LineEditMulti {
+                id: daemonUsername
+                Layout.fillWidth: true
+                labelFontSize: 14
+                fontSize: 15
+                labelText: qsTr("Daemon RPC username") + translationManager.emptyString
+                placeholderText: qsTr("(optional)") + translationManager.emptyString
+                placeholderFontSize: 15
+                text: persistentSettings.daemonUsername
+                addressValidation: false
+                onEditingFinished: {
+                    persistentSettings.daemonUsername = daemonUsername.text;
+                }
+            }
+
+            MevaCoinComponents.LineEditMulti {
+                id: daemonPassword
+                Layout.fillWidth: true
+                labelFontSize: 14
+                fontSize: 15
+                labelText: qsTr("Daemon RPC password") + translationManager.emptyString
+                placeholderText: qsTr("(optional)") + translationManager.emptyString
+                placeholderFontSize: 15
+                text: persistentSettings.daemonPassword
+                addressValidation: false
+                echoMode: TextInput.Password
+                onEditingFinished: {
+                    persistentSettings.daemonPassword = daemonPassword.text;
+                }
+            }
+
             RowLayout {
                 visible: !persistentSettings.useRemoteNode
 

@@ -79,6 +79,8 @@ signals:
     void badgeRequirementsReceived(const QJsonObject &requirements);
     void lookupNodeByWalletReceived(const QJsonObject &result);
     void errorOccurred(const QString &error);
+    void rpcRequestSent(const QString &method, const QString &params, const QString &url);
+    void rpcResponseReceived(const QString &method, const QString &response, const QString &error, quint64 elapsedMs);
     // Write RPC response signals
     void registerNodeReceived(const QJsonObject &result);
     void unregisterNodeReceived(const QJsonObject &result);

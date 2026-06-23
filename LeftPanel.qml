@@ -63,6 +63,7 @@ Rectangle {
     signal addressBookClicked()
     signal accountClicked()
     signal mevatrustClicked()
+    signal nodeMonitorClicked()
 
     function selectItem(pos) {
         menuColumn.previousButton.checked = false
@@ -74,6 +75,7 @@ Rectangle {
         else if(pos === "Advanced") menuColumn.previousButton = advancedButton
         else if(pos === "Account") menuColumn.previousButton = accountButton
         else if(pos === "Mevatrust") menuColumn.previousButton = mevatrustButton
+        else if(pos === "NodeMonitor") menuColumn.previousButton = nodeMonitorButton
         menuColumn.previousButton.checked = true
     }
 
@@ -543,6 +545,27 @@ Rectangle {
 
             MevaCoinComponents.MenuButtonDivider {
                 visible: settingsButton.present
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 20
+            }
+
+            // ------------- Node Monitor tab ---------------
+            MevaCoinComponents.MenuButton {
+                id: nodeMonitorButton
+                anchors.left: parent.left
+                anchors.right: parent.right
+                text: qsTr("Node Monitor") + translationManager.emptyString
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "N" + translationManager.emptyString
+                onClicked: {
+                    parent.previousButton.checked = false
+                    parent.previousButton = nodeMonitorButton
+                    panel.nodeMonitorClicked()
+                }
+            }
+
+            MevaCoinComponents.MenuButtonDivider {
+                visible: nodeMonitorButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.leftMargin: 20

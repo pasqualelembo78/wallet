@@ -19,6 +19,43 @@ Rectangle {
     // ── MODELLO LOG ──
     ListModel { id: logModel }
 
+    // Connetti i segnali di logging live da MevatrustManager
+    Connections {
+        target: mevatrustManager
+        function onRpcRequestSent(method, params, url) {
+            logModel.append({
+                timestamp: new Date().toLocaleString(),
+                direction: "▶ REQ",
+                server: url,
+                details: method + (params !== "" && params !== "{}" ? " " + params : ""),
+                response: ""
+            });
+            if (logModel.count > 500) logModel.remove(0, logModel.count - 500);
+        }
+        function onRpcResponseReceived(method, response, error, elapsedMs) {
+            var detail = method + " (" + elapsedMs + "ms)";
+            if (error !== "") detail += " ERR: " + error;
+            logModel.append({
+                timestamp: new Date().toLocaleString(),
+                direction: error !== "" ? "◄ ERR" : "◄ RSP",
+                server: "",
+                details: detail,
+                response: error !== "" ? error : response
+            });
+            if (logModel.count > 500) logModel.remove(0, logModel.count - 500);
+        }
+        function onErrorOccurred(msg) {
+            logModel.append({
+                timestamp: new Date().toLocaleString(),
+                direction: "◄ ERR",
+                server: "",
+                details: msg,
+                response: ""
+            });
+            if (logModel.count > 500) logModel.remove(0, logModel.count - 500);
+        }
+    }
+
     // ── MODELLO TEST SERVER ──
     ListModel { id: testModel }
 
@@ -523,12 +560,14 @@ Rectangle {
                     }
                 }
 
-                ScrollView {
+                Flickable {
+                    id: daemonLogFlickable
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
+                    boundsBehavior: Flickable.StopAtBounds
 
-                    TextArea {
+                    TextArea.flickable: TextArea {
                         id: daemonLogArea
                         readOnly: true
                         font.family: "monospace"
@@ -539,6 +578,7 @@ Rectangle {
                             radius: 4
                         }
                         wrapMode: TextEdit.Wrap
+                        textFormat: TextEdit.RichText
 
                         function appendLog(msg) {
                             var color = MevaCoinComponents.Style.defaultFontColor;
@@ -552,6 +592,10 @@ Rectangle {
                                 daemonLogArea.remove(0, daemonLogArea.length - 40000);
                             daemonLogArea.cursorPosition = daemonLogArea.length;
                         }
+                    }
+
+                    ScrollBar.vertical: ScrollBar {
+                        policy: ScrollBar.AlwaysOn
                     }
                 }
             }

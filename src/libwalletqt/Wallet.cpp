@@ -352,6 +352,11 @@ bool Wallet::connectToDaemon()
     return m_walletImpl->connectToDaemon();
 }
 
+void Wallet::allowMismatchedDaemonVersion(bool allow)
+{
+    m_walletImpl->allowMismatchedDaemonVersion(allow);
+}
+
 void Wallet::setTrustedDaemon(bool arg)
 {
     m_walletImpl->setTrustedDaemon(arg);

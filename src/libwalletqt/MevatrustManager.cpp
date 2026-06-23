@@ -5,6 +5,7 @@
 #include <QNetworkRequest>
 #include <QByteArray>
 #include <QAuthenticator>
+#include <QDateTime>
 
 MevatrustManager::MevatrustManager(QObject *parent)
     : QObject(parent)
@@ -92,26 +93,38 @@ void MevatrustManager::rpcCallInternal(const QString &method, const QJsonObject 
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
+    auto startTime = QDateTime::currentMSecsSinceEpoch();
+    emit rpcRequestSent(method, QString::fromUtf8(QJsonDocument(params).toJson(QJsonDocument::Compact)), m_daemonAddress + "/json_rpc");
+
     auto *reply = m_network->post(req, QJsonDocument(rpc).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply, callback]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, callback, method, startTime]() {
         reply->deleteLater();
 
+        auto elapsed = QDateTime::currentMSecsSinceEpoch() - startTime;
+
         if (reply->error() != QNetworkReply::NoError) {
+            emit rpcResponseReceived(method, "", reply->errorString(), elapsed);
             emit errorOccurred("RPC error: " + reply->errorString());
             return;
         }
 
-        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        QByteArray rawData = reply->readAll();
+        QJsonDocument doc = QJsonDocument::fromJson(rawData);
         QJsonObject obj = doc.object();
         if (obj.contains("error")) {
-            emit errorOccurred("RPC error: " + obj["error"].toObject()["message"].toString());
+            QString errMsg = obj["error"].toObject()["message"].toString();
+            emit rpcResponseReceived(method, QString::fromUtf8(rawData), errMsg, elapsed);
+            emit errorOccurred("RPC error: " + errMsg);
             return;
         }
         QJsonObject result = obj["result"].toObject();
         if (result["status"].toString() == "error") {
-            emit errorOccurred(result["message"].toString());
+            QString errMsg = result["message"].toString();
+            emit rpcResponseReceived(method, QString::fromUtf8(rawData), errMsg, elapsed);
+            emit errorOccurred(errMsg);
             return;
         }
+        emit rpcResponseReceived(method, QString::fromUtf8(rawData), "", elapsed);
         callback(result);
     });
 }

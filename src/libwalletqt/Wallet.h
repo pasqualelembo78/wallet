@@ -178,6 +178,9 @@ public:
     //! connects to daemon
     Q_INVOKABLE bool connectToDaemon();
 
+    //! allows communication with daemon using a different version
+    Q_INVOKABLE void allowMismatchedDaemonVersion(bool allow);
+
     //! indicates id daemon is trusted
     Q_INVOKABLE void setTrustedDaemon(bool arg);
 

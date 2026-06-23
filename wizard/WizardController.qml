@@ -383,7 +383,7 @@ Rectangle {
             // save to persistent settings
             persistentSettings.account_name = wizardController.walletOptionsName
             persistentSettings.wallet_path = wizardController.m_wallet.path;
-            persistentSettings.restore_height = (isNaN(walletOptionsRestoreHeight))? 0 : walletOptionsRestoreHeight
+            persistentSettings.restore_height = 0
 
             persistentSettings.is_recovering = (wizardController.walletOptionsIsRecovering === undefined) ? false : wizardController.walletOptionsIsRecovering
             persistentSettings.is_recovering_from_device = (wizardController.walletOptionsIsRecoveringFromDevice === undefined) ? false : wizardController.walletOptionsIsRecoveringFromDevice

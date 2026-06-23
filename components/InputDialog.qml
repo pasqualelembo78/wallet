@@ -40,6 +40,7 @@ Item {
     visible: false
     property alias labelText: label.text
     property alias inputText: input.text
+    property bool passwordMode: false
 
     // same signals as Dialog has
     signal accepted()
@@ -93,6 +94,7 @@ Item {
                 verticalAlignment: TextInput.AlignVCenter
                 font.family: MevaCoinComponents.Style.fontLight.name
                 font.pixelSize: 24
+                echoMode: root.passwordMode ? TextInput.Password : TextInput.Normal
                 KeyNavigation.tab: okButton
                 bottomPadding: 10
                 leftPadding: 10

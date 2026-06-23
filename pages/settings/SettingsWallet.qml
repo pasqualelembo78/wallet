@@ -62,6 +62,18 @@ Rectangle {
         }
 
         MevaCoinComponents.SettingsListItem {
+            iconText: FontAwesome.userLock
+            description: qsTr("Locks the app and returns to the login screen.") + translationManager.emptyString
+            title: qsTr("Lock app") + translationManager.emptyString
+
+            onClicked: {
+                appWindow.closeWallet()
+                rootItem.state = "login"
+                loginScreen.isSetup = false
+            }
+        }
+
+        MevaCoinComponents.SettingsListItem {
             iconText: FontAwesome.signOutAlt
             description: qsTr("Logs out of this wallet.") + translationManager.emptyString
             title: qsTr("Close this wallet") + translationManager.emptyString
@@ -181,6 +193,37 @@ Rectangle {
                 }
                 passwordDialog.onRejectedCallback = null;
                 passwordDialog.open()
+            }
+        }
+
+        MevaCoinComponents.SettingsListItem {
+            iconText: FontAwesome.userCog
+            description: qsTr("Change the username or password used to access this app.") + translationManager.emptyString
+            title: qsTr("Change app access credentials") + translationManager.emptyString
+
+            onClicked: {
+                inputDialog.labelText = qsTr("Enter current password to change credentials:") + translationManager.emptyString;
+                inputDialog.inputText = ""
+                inputDialog.passwordMode = true
+                inputDialog.onAcceptedCallback = function() {
+                    if (inputDialog.inputText === persistentSettings.loginPassword) {
+                        persistentSettings.loginUsername = ""
+                        persistentSettings.loginPassword = ""
+                        informationPopup.title  = qsTr("Credentials reset") + translationManager.emptyString;
+                        informationPopup.text = qsTr("App credentials have been reset. You will be asked to set new ones on next app start.") + translationManager.emptyString;
+                        informationPopup.icon  = StandardIcon.Information
+                        informationPopup.onCloseCallback = null
+                        informationPopup.open()
+                    } else {
+                        informationPopup.title  = qsTr("Error") + translationManager.emptyString;
+                        informationPopup.text = qsTr("Wrong password") + translationManager.emptyString;
+                        informationPopup.icon  = StandardIcon.Critical
+                        informationPopup.onCloseCallback = null
+                        informationPopup.open()
+                    }
+                }
+                inputDialog.onRejectedCallback = null;
+                inputDialog.open()
             }
         }
 
