@@ -67,17 +67,23 @@ Rectangle {
                 var info = resp ? resp : {};
                 var height = info.height !== undefined ? info.height : "?";
                 var version = info.version !== undefined ? info.version : "";
+                var nettype = info.nettype !== undefined ? info.nettype : "";
+                var isMainnet = nettype === "mainnet" || info.mainnet === true;
                 var jsonStr = JSON.stringify(info, null, 2);
+                var isMevaCoin = true; // accettiamo sempre, la versione RPC fa da filtro
+                var extra = "";
+                // Mostra la versione RPC (CORE_RPC_VERSION) se disponibile
+                var rpcVersion = info.core_rpc_version !== undefined ? " RPCv" + info.core_rpc_version : "";
                 addLog(new Date().toLocaleString(), "◄ RSP", host + ":" + port,
-                    "OK (" + elapsed + "ms) height=" + height, jsonStr);
+                    "OK (" + elapsed + "ms) height=" + height + rpcVersion, jsonStr);
                 if (idx >= 0 && idx < testModel.count) {
                     testModel.set(idx, {
                         server: host + ":" + port,
                         status: "● online",
                         height: "" + height,
-                        version: "" + version,
+                        version: "" + version + (!isMainnet && version ? " (" + nettype + ")" : "") + rpcVersion,
                         latency: elapsed + "ms",
-                        error: "",
+                        error: version ? "" : "Versione sconosciuta",
                         online: true
                     });
                 }
@@ -246,7 +252,8 @@ Rectangle {
                             MevaCoinComponents.TextPlain { font.bold: true; font.pixelSize: 11; color: MevaCoinComponents.Style.defaultFontColor; Layout.preferredWidth: 80; text: "Stato" }
                             MevaCoinComponents.TextPlain { font.bold: true; font.pixelSize: 11; color: MevaCoinComponents.Style.defaultFontColor; Layout.preferredWidth: 70; text: "Altezza" }
                             MevaCoinComponents.TextPlain { font.bold: true; font.pixelSize: 11; color: MevaCoinComponents.Style.defaultFontColor; Layout.preferredWidth: 70; text: "Latenza" }
-                            MevaCoinComponents.TextPlain { font.bold: true; font.pixelSize: 11; color: MevaCoinComponents.Style.defaultFontColor; Layout.fillWidth: true; text: "Versione / Errore" }
+                            MevaCoinComponents.TextPlain { font.bold: true; font.pixelSize: 11; color: MevaCoinComponents.Style.defaultFontColor; Layout.fillWidth: true; text: "Versione" }
+                            MevaCoinComponents.TextPlain { font.bold: true; font.pixelSize: 11; color: MevaCoinComponents.Style.defaultFontColor; Layout.preferredWidth: 160; text: "Errore / Note" }
                         }
                     }
 
@@ -265,7 +272,8 @@ Rectangle {
                             }
                             MevaCoinComponents.TextPlain { font.pixelSize: 11; font.family: "monospace"; color: MevaCoinComponents.Style.defaultFontColor; Layout.preferredWidth: 70; text: height }
                             MevaCoinComponents.TextPlain { font.pixelSize: 11; color: MevaCoinComponents.Style.defaultFontColor; Layout.preferredWidth: 70; text: latency }
-                            MevaCoinComponents.TextPlain { font.pixelSize: 10; color: online ? MevaCoinComponents.Style.defaultFontColor : "#FF4444"; Layout.fillWidth: true; text: error || version; elide: Text.ElideRight }
+                            MevaCoinComponents.TextPlain { font.pixelSize: 10; font.family: "monospace"; color: MevaCoinComponents.Style.defaultFontColor; Layout.fillWidth: true; text: version; elide: Text.ElideRight }
+                            MevaCoinComponents.TextPlain { font.pixelSize: 10; color: online ? (error ? "#FFaa00" : MevaCoinComponents.Style.dimmedFontColor) : "#FF4444"; Layout.preferredWidth: 160; text: error; elide: Text.ElideRight }
                         }
                     }
                 }
@@ -476,6 +484,84 @@ Rectangle {
             }
         }
 
+        // ── DAEMON CONSOLE LOG ──
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 220
+            radius: 8
+            color: MevaCoinComponents.Style.blackTheme ? "#1e1e1e" : "#f5f5f5"
+            border.color: MevaCoinComponents.Style.dividerColor
+            border.width: 1
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 4
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    MevaCoinComponents.TextPlain {
+                        font.bold: true
+                        font.pixelSize: 13
+                        color: MevaCoinComponents.Style.defaultFontColor
+                        text: qsTr("Log Demone") + translationManager.emptyString
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    MevaCoinComponents.TextPlain {
+                        font.pixelSize: 10
+                        color: persistentSettings.useRemoteNode ? MevaCoinComponents.Style.dimmedFontColor : MevaCoinComponents.Style.defaultFontColor
+                        text: persistentSettings.useRemoteNode ? qsTr("(non disponibile in modalità remote node)") : ""
+                    }
+
+                    MevaCoinComponents.StandardButton {
+                        small: true
+                        text: "Pulisci"
+                        onClicked: daemonLogArea.clear()
+                    }
+                }
+
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+
+                    TextArea {
+                        id: daemonLogArea
+                        readOnly: true
+                        font.family: "monospace"
+                        font.pixelSize: 11
+                        color: MevaCoinComponents.Style.defaultFontColor
+                        background: Rectangle {
+                            color: MevaCoinComponents.Style.blackTheme ? "#0d0d0d" : "#ffffff"
+                            radius: 4
+                        }
+                        wrapMode: TextEdit.Wrap
+
+                        function appendLog(msg) {
+                            var color = MevaCoinComponents.Style.defaultFontColor;
+                            if (msg.toLowerCase().indexOf('error') >= 0)
+                                color = "#FF4444";
+                            else if (msg.toLowerCase().indexOf('warning') >= 0)
+                                color = "#fa6800";
+                            var html = "<span style='color:" + color + ";'>" + msg + "</span><br>";
+                            daemonLogArea.insert(daemonLogArea.length, html);
+                            if (daemonLogArea.length > 50000)
+                                daemonLogArea.remove(0, daemonLogArea.length - 40000);
+                            daemonLogArea.cursorPosition = daemonLogArea.length;
+                        }
+                    }
+                }
+            }
+        }
+
         Item { Layout.fillHeight: true }
+    }
+
+    Component.onCompleted: {
+        if (typeof daemonManager !== "undefined")
+            daemonManager.daemonConsoleUpdated.connect(daemonLogArea.appendLog);
     }
 }

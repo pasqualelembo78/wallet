@@ -543,21 +543,25 @@ ApplicationWindow {
             firstBlockSeen = 0;
         }
 
-        // Auto-failover remote node
-        if (status == Wallet.ConnectionStatus_Disconnected
+        // Auto-failover remote node (sia per Disconnected che WrongVersion)
+        if ((status == Wallet.ConnectionStatus_Disconnected || status == Wallet.ConnectionStatus_WrongVersion)
             && persistentSettings.useRemoteNode
             && remoteNodesModel.count > 1
             && appWindow.autoReconnectAttempts < appWindow.autoReconnectMaxAttempts) {
             appWindow.autoReconnectAttempts++;
             appWindow.autoReconnectTotalTries++;
+            if (status == Wallet.ConnectionStatus_WrongVersion) {
+                appWindow.showStatusMessage(
+                    qsTr("Versione core errata su ") + currentDaemonAddress + qsTr(", provo altro nodo..."), 3);
+            }
             autoReconnectTimer.start();
             return;
         }
-        if (status == Wallet.ConnectionStatus_Disconnected
+        if ((status == Wallet.ConnectionStatus_Disconnected || status == Wallet.ConnectionStatus_WrongVersion)
             && persistentSettings.useRemoteNode
             && appWindow.autoReconnectAttempts >= appWindow.autoReconnectMaxAttempts) {
             appWindow.showStatusMessage(
-                qsTr("Tutti i nodi remoti non rispondono. Riprovo tra 30 secondi..."), 5);
+                qsTr("Tutti i nodi remoti non rispondono o hanno versione errata. Riprovo tra 30 secondi..."), 5);
             // Reset dopo timeout più lungo per riprovare tutto il ciclo
             Qt.callLater(function() {
                 appWindow.autoReconnectAttempts = 0;

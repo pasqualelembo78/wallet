@@ -161,6 +161,7 @@ ColumnLayout {
                         ["UI",     "Interface"],
                         ["Node",   "Node"],
                         ["Debug",  "Debug"],
+                        ["Log",    "Log"],
                         ["Info",   "Info"],
                     ]
 
@@ -261,7 +262,6 @@ ColumnLayout {
             active: settingsStateView.state == "Log"
             text: qsTr("Log") + translationManager.emptyString
             onSelected: settingsStateView.state = "Log"
-            visible: !isAndroid
         }
         MevaCoinComponents.NavbarItem {
             active: settingsStateView.state == "Info"
