@@ -193,6 +193,7 @@ ApplicationWindow {
         else if(seq === "Ctrl+D") middlePanel.state = "Advanced"
         else if(seq === "Ctrl+T") middlePanel.state = "Account"
         else if(seq === "Ctrl+M") middlePanel.state = "Mevatrust"
+        else if(seq === "Ctrl+G") middlePanel.state = "GovernanceExplorer"
         else if(seq === "Ctrl+Tab" || seq === "Alt+Tab") {
             /*
             if(middlePanel.state === "Transfer") middlePanel.state = "Receive"
@@ -2075,6 +2076,11 @@ ApplicationWindow {
                     middlePanel.flickable.contentY = 0;
                 }
 
+                onGovernanceExplorerClicked: {
+                    middlePanel.state = "GovernanceExplorer";
+                    middlePanel.flickable.contentY = 0;
+                }
+
                 onNodeMonitorClicked: {
                     middlePanel.state = "Settings";
                     middlePanel.settingsView.settingsStateViewState = "Debug";
@@ -2418,6 +2424,10 @@ ApplicationWindow {
                     Rectangle { width: parent.width; height: 52; color: middlePanel.state === "Mevatrust" ? "#20FFFFFF" : "transparent"
                         Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.shieldAlt; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.state === "Mevatrust" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("MevaTrust") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.state === "Mevatrust" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }
                         MouseArea { anchors.fill: parent; onClicked: mobileNavigate("Mevatrust") } }
+                    // Governance Explorer
+                    Rectangle { width: parent.width; height: 52; color: middlePanel.state === "GovernanceExplorer" ? "#20FFFFFF" : "transparent"
+                        Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.chartBar; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.state === "GovernanceExplorer" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("Governance") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.state === "GovernanceExplorer" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }
+                        MouseArea { anchors.fill: parent; onClicked: mobileNavigate("GovernanceExplorer") } }
                     // Node Monitor
                     Rectangle { width: parent.width; height: 52; color: middlePanel.settingsView.settingsStateViewState === "Debug" && middlePanel.state === "Settings" ? "#20FFFFFF" : "transparent"
                         Row { anchors.fill: parent; anchors.leftMargin: 20; spacing: 16; Text { text: FontAwesome.server; font.family: FontAwesome.fontFamilySolid; font.styleName: "Solid"; font.pixelSize: 18; color: middlePanel.settingsView.settingsStateViewState === "Debug" && middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } Text { text: qsTr("Node Monitor") + translationManager.emptyString; font.family: MevaCoinComponents.Style.fontRegular.name; font.pixelSize: 15; color: middlePanel.settingsView.settingsStateViewState === "Debug" && middlePanel.state === "Settings" ? "#FA6800" : MevaCoinComponents.Style.defaultFontColor; anchors.verticalCenter: parent.verticalCenter } }

@@ -416,3 +416,23 @@ void MevatrustManager::storePurchasesByStore(const QString &storeId)
         emit storePurchasesByStoreReceived(result);
     });
 }
+
+// ── Governance Dashboard RPC methods ─────────────────────────────────────
+
+void MevatrustManager::getPoolDistributionHistory(quint32 limit)
+{
+    QJsonObject params;
+    params["limit"] = (qint32)limit;
+    rpcCall("get_pool_distribution_history", params, [this](const QJsonObject &result) {
+        emit poolDistributionHistoryReceived(result);
+    });
+}
+
+void MevatrustManager::getRecentBlocks(quint32 count)
+{
+    QJsonObject params;
+    params["count"] = (qint32)count;
+    rpcCall("get_recent_blocks", params, [this](const QJsonObject &result) {
+        emit recentBlocksReceived(result);
+    });
+}

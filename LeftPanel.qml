@@ -63,6 +63,7 @@ Rectangle {
     signal addressBookClicked()
     signal accountClicked()
     signal mevatrustClicked()
+    signal governanceExplorerClicked()
     signal nodeMonitorClicked()
 
     function selectItem(pos) {
@@ -75,6 +76,7 @@ Rectangle {
         else if(pos === "Advanced") menuColumn.previousButton = advancedButton
         else if(pos === "Account") menuColumn.previousButton = accountButton
         else if(pos === "Mevatrust") menuColumn.previousButton = mevatrustButton
+        else if(pos === "GovernanceExplorer") menuColumn.previousButton = governanceExplorerButton
         else if(pos === "NodeMonitor") menuColumn.previousButton = nodeMonitorButton
         menuColumn.previousButton.checked = true
     }
@@ -415,6 +417,27 @@ Rectangle {
 
             MevaCoinComponents.MenuButtonDivider {
                 visible: mevatrustButton.present
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 20
+            }
+
+            // ------------- Governance Explorer tab ---------------
+            MevaCoinComponents.MenuButton {
+                id: governanceExplorerButton
+                anchors.left: parent.left
+                anchors.right: parent.right
+                text: qsTr("Governance") + translationManager.emptyString
+                symbol: (isMac ? "\u2303" : qsTr("Ctrl+")) + "G" + translationManager.emptyString
+                onClicked: {
+                    parent.previousButton.checked = false
+                    parent.previousButton = governanceExplorerButton
+                    panel.governanceExplorerClicked()
+                }
+            }
+
+            MevaCoinComponents.MenuButtonDivider {
+                visible: governanceExplorerButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.leftMargin: 20

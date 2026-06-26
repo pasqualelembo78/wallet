@@ -66,6 +66,7 @@ Rectangle {
     property Dashboard dashboardView: Dashboard { }
     property Privacy privacyView: Privacy { }
     property Mevatrust mevatrustView: Mevatrust { }
+    property GovernanceExplorer governanceExplorerView: GovernanceExplorer { }
 
     signal paymentClicked(var recipients, string paymentId, int mixinCount, int priority, string description)
     signal sweepUnmixableClicked()
@@ -175,6 +176,10 @@ Rectangle {
                 name: "Mevatrust"
                 PropertyChanges { target: root; currentView: mevatrustView }
                 PropertyChanges { target: mainFlickable; contentHeight: mevatrustView.myHeight }
+            }, State {
+                name: "GovernanceExplorer"
+                PropertyChanges { target: root; currentView: governanceExplorerView }
+                PropertyChanges { target: mainFlickable; contentHeight: governanceExplorerView.contentHeight }
             }
         ]
 

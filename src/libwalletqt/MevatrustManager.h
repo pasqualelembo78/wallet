@@ -62,6 +62,10 @@ public:
     Q_INVOKABLE void storeMyPurchases(const QString &buyerPubkey);
     Q_INVOKABLE void storePurchasesByStore(const QString &storeId);
 
+    // ── Governance Dashboard RPC methods ──────────────────────────────────
+    Q_INVOKABLE void getPoolDistributionHistory(quint32 limit = 50);
+    Q_INVOKABLE void getRecentBlocks(quint32 count = 10);
+
 signals:
     void daemonAddressChanged();
     void daemonUsernameChanged();
@@ -101,6 +105,9 @@ signals:
     void storeSearchReceived(const QJsonObject &result);
     void storeMyPurchasesReceived(const QJsonObject &result);
     void storePurchasesByStoreReceived(const QJsonObject &result);
+    // Governance Dashboard signals
+    void poolDistributionHistoryReceived(const QJsonObject &result);
+    void recentBlocksReceived(const QJsonObject &result);
 
 private:
     void rpcCall(const QString &method, const QJsonObject &params,
