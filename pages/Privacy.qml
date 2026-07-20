@@ -160,10 +160,10 @@ Rectangle {
                 lineHeight: 1.4
             }
 
-            // ── 6. Sicurezza ──────────────────────────────────────────────────
+            // ── 6. IP Address and Network Disclosure ───────────────────────────
             Text {
                 Layout.fillWidth: true
-                text: qsTr("6. Security")
+                text: qsTr("6. IP Address and Network Data")
                 font.family: MevaCoinComponents.Style.fontBold.name
                 font.pixelSize: 15
                 font.bold: true
@@ -172,7 +172,7 @@ Rectangle {
             }
             Text {
                 Layout.fillWidth: true
-                text: qsTr("We implement industry-standard cryptographic practices to protect your funds. However, no software is 100% immune to vulnerabilities. Please keep the app updated and protect your device with a strong passcode. Never share your seed phrase or private keys with anyone.")
+                text: qsTr("When you connect to a remote MevaCoin node, your IP address is visible to that node operator. The app also offers optional fiat price conversion (Settings &gt; Fiat Price), which sends requests to a third-party price API, exposing your IP address to that service. You can disable this feature at any time in Settings.\n\nIf you enable SOCKS5 proxy in Settings, all network traffic from the app is routed through your configured proxy server. The proxy operator may see your encrypted traffic.")
                 font.family: MevaCoinComponents.Style.fontRegular.name
                 font.pixelSize: 13
                 color: MevaCoinComponents.Style.dimmedFontColor
@@ -180,10 +180,110 @@ Rectangle {
                 lineHeight: 1.4
             }
 
-            // ── 7. Modifiche ──────────────────────────────────────────────────
+            // ── 7. Background Processing ───────────────────────────────────────
             Text {
                 Layout.fillWidth: true
-                text: qsTr("7. Changes to This Policy")
+                text: qsTr("7. Background Processing")
+                font.family: MevaCoinComponents.Style.fontBold.name
+                font.pixelSize: 15
+                font.bold: true
+                color: MevaCoinComponents.Style.defaultFontColor
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("The app can synchronize your wallet with the blockchain in the background (Settings &gt; Layout &gt; Sync in the background when locked). This feature periodically connects to MevaCoin nodes to keep your balance and transaction history up to date. You can disable background sync at any time in Settings.\n\nBackground sync uses mobile data or Wi-Fi according to your device's connectivity settings.")
+                font.family: MevaCoinComponents.Style.fontRegular.name
+                font.pixelSize: 13
+                color: MevaCoinComponents.Style.dimmedFontColor
+                wrapMode: Text.Wrap
+                lineHeight: 1.4
+            }
+
+            // ── 8. Security ────────────────────────────────────────────────────
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("8. Security")
+                font.family: MevaCoinComponents.Style.fontBold.name
+                font.pixelSize: 15
+                font.bold: true
+                color: MevaCoinComponents.Style.defaultFontColor
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("We implement industry-standard cryptographic practices to protect your funds. However, no software is 100% immune to vulnerabilities. Please keep the app updated and protect your device with a strong passcode. Never share your seed phrase or private keys with anyone.\n\nWallet passwords and login credentials are stored locally on your device in the app's private data directory. We recommend using a strong, unique password.")
+                font.family: MevaCoinComponents.Style.fontRegular.name
+                font.pixelSize: 13
+                color: MevaCoinComponents.Style.dimmedFontColor
+                wrapMode: Text.Wrap
+                lineHeight: 1.4
+            }
+
+            // ── 9. Data Retention ──────────────────────────────────────────────
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("9. Data Retention")
+                font.family: MevaCoinComponents.Style.fontBold.name
+                font.pixelSize: 15
+                font.bold: true
+                color: MevaCoinComponents.Style.defaultFontColor
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("All wallet data is stored locally on your device and retained until you delete the app or remove the wallet files. Blockchain data is not stored by the app — it is retrieved on-demand from MevaCoin network nodes. No personal data is retained on any server by the app developers.")
+                font.family: MevaCoinComponents.Style.fontRegular.name
+                font.pixelSize: 13
+                color: MevaCoinComponents.Style.dimmedFontColor
+                wrapMode: Text.Wrap
+                lineHeight: 1.4
+            }
+
+            // ── 10. Your Rights (GDPR / CCPA) ─────────────────────────────────
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("10. Your Rights (GDPR / CCPA)")
+                font.family: MevaCoinComponents.Style.fontBold.name
+                font.pixelSize: 15
+                font.bold: true
+                color: MevaCoinComponents.Style.defaultFontColor
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Since we do not collect any personal data, there is no personal data to access, rectify, or delete. If you have questions about data handling, please contact us through our GitHub repository. You may uninstall the app at any time to remove all locally stored data.")
+                font.family: MevaCoinComponents.Style.fontRegular.name
+                font.pixelSize: 13
+                color: MevaCoinComponents.Style.dimmedFontColor
+                wrapMode: Text.Wrap
+                lineHeight: 1.4
+            }
+
+            // ── 11. Logging ────────────────────────────────────────────────────
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("11. Logging and Diagnostics")
+                font.family: MevaCoinComponents.Style.fontBold.name
+                font.pixelSize: 15
+                font.bold: true
+                color: MevaCoinComponents.Style.defaultFontColor
+                wrapMode: Text.Wrap
+            }
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("The app may generate local log files for diagnostic purposes. These logs may include RPC request/response data, connection status, and error messages. Logs are stored locally on your device and are never transmitted to us or to third parties. You can adjust the logging level in Settings > Log.")
+                font.family: MevaCoinComponents.Style.fontRegular.name
+                font.pixelSize: 13
+                color: MevaCoinComponents.Style.dimmedFontColor
+                wrapMode: Text.Wrap
+                lineHeight: 1.4
+            }
+
+            // ── 12. Changes to This Policy ─────────────────────────────────────
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("12. Changes to This Policy")
                 font.family: MevaCoinComponents.Style.fontBold.name
                 font.pixelSize: 15
                 font.bold: true
@@ -200,10 +300,10 @@ Rectangle {
                 lineHeight: 1.4
             }
 
-            // ── 8. Contatti ───────────────────────────────────────────────────
+            // ── 13. Contact Us ─────────────────────────────────────────────────
             Text {
                 Layout.fillWidth: true
-                text: qsTr("8. Contact Us")
+                text: qsTr("13. Contact Us")
                 font.family: MevaCoinComponents.Style.fontBold.name
                 font.pixelSize: 15
                 font.bold: true

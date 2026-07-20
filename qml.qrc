@@ -232,6 +232,7 @@
         <file>wizard/WizardMenuItem.qml</file>
         <file>js/Wizard.js</file>
         <file>components/LanguageSidebar.qml</file>
+        <file>components/LoginScreen.qml</file>
         <file>images/world-flags-globe.png</file>
         <file>images/restore-wallet-from-hardware@2x.png</file>
         <file>images/restore-wallet-from-hardware.png</file>

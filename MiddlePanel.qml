@@ -67,6 +67,8 @@ Rectangle {
     property Privacy privacyView: Privacy { }
     property Mevatrust mevatrustView: Mevatrust { }
     property GovernanceExplorer governanceExplorerView: GovernanceExplorer { }
+    property Mining miningView: Mining { }
+    property Terms termsView: Terms { }
 
     signal paymentClicked(var recipients, string paymentId, int mixinCount, int priority, string description)
     signal sweepUnmixableClicked()
@@ -180,6 +182,14 @@ Rectangle {
                 name: "GovernanceExplorer"
                 PropertyChanges { target: root; currentView: governanceExplorerView }
                 PropertyChanges { target: mainFlickable; contentHeight: governanceExplorerView.contentHeight }
+            }, State {
+                name: "Mining"
+                PropertyChanges { target: root; currentView: miningView }
+                PropertyChanges { target: mainFlickable; contentHeight: miningView.miningHeight }
+            }, State {
+                name: "Terms"
+                PropertyChanges { target: root; currentView: termsView }
+                PropertyChanges { target: mainFlickable; contentHeight: termsView.termsHeight }
             }
         ]
 

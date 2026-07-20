@@ -12,15 +12,70 @@ Rectangle {
     property var recentBlocks: []
     property var treasuryTxs: []
     property var knownHeight: 0
+    property var treasuryStatus: ({})
+    property var netFundStatus: ({})
+    property var govActivity: []
+    property var proposerStatus: ({})
+    property var nodePubkey: ""
+    property var proposalList: []
+    property var proposalVotes: []
+    property string selectedProposalId: ""
 
     function onPageCompleted() {
         refresh();
     }
 
     function refresh() {
+        connectionError = "";
+        isLoading = true;
         mevatrustManager.getNetworkStats();
         mevatrustManager.getPoolDistributionHistory(50);
         mevatrustManager.getRecentBlocks(10);
+        mevatrustManager.getTreasuryStatus();
+        mevatrustManager.getNetworkFundStatus();
+        mevatrustManager.getGovernanceActivity(0, 100);
+        mevatrustManager.getProposerStatus();
+        mevatrustManager.getNodePubkey();
+    }
+
+    function formatMVC(amount) {
+        if (amount === undefined || amount === null || amount === 0) return "0 MVC";
+        return (amount / 1e12).toFixed(1) + " MVC";
+    }
+
+    function formatMVCFull(amount) {
+        if (amount === undefined || amount === null) return "—";
+        return (amount / 1e12).toFixed(4) + " MVC";
+    }
+
+    function tagLabel(tag) {
+        switch (tag) {
+            case 0xB0: return qsTr("Treasury Transfer");
+            case 0xB1: return qsTr("Add Signer");
+            case 0xB2: return qsTr("Remove Signer");
+            case 0xC0: return qsTr("Network Fund Transfer");
+            default: return "0x" + tag.toString(16).toUpperCase();
+        }
+    }
+
+    function tagColor(tag) {
+        switch (tag) {
+            case 0xB0: return "#88CCFF";
+            case 0xB1: return "#FFD700";
+            case 0xB2: return "#FF6B6B";
+            case 0xC0: return "#88DDA8";
+            default: return "#888888";
+        }
+    }
+
+    function proposalStatusLabel(s) {
+        switch (s) {
+            case 0: return qsTr("Pending");
+            case 1: return qsTr("Approved");
+            case 2: return qsTr("Rejected");
+            case 3: return qsTr("Expired");
+            default: return qsTr("Unknown");
+        }
     }
 
     function timeAgo(ts) {
@@ -33,8 +88,15 @@ Rectangle {
         return Math.floor(diff/86400) + "d ago";
     }
 
+    property string connectionError: ""
+    property bool isLoading: true
+
     Connections {
         target: mevatrustManager
+        onErrorOccurred: {
+            connectionError = error;
+            isLoading = false;
+        }
         onNetworkStatsReceived: {
             poolStats = result;
         }
@@ -51,6 +113,35 @@ Rectangle {
                 knownHeight = result.known_height;
             }
         }
+        onTreasuryStatusReceived: {
+            treasuryStatus = result;
+        }
+        onNetworkFundStatusReceived: {
+            netFundStatus = result;
+        }
+        onGovernanceActivityReceived: {
+            if (result && result.entries) {
+                govActivity = result.entries;
+            }
+        }
+        onProposerStatusReceived: {
+            proposerStatus = result;
+        }
+        onNodePubkeyReceived: {
+            if (result && result.node_pubkey) {
+                nodePubkey = result.node_pubkey;
+            }
+        }
+        onCircleProposalListReceived: {
+            if (result && result.proposals) {
+                proposalList = result.proposals;
+            }
+        }
+        onCircleProposalVotesReceived: {
+            if (result && result.votes) {
+                proposalVotes = result.votes;
+            }
+        }
     }
 
     ColumnLayout {
@@ -63,33 +154,47 @@ Rectangle {
         spacing: 16
 
         // ── Header ──
-        RowLayout {
+        ColumnLayout {
             Layout.fillWidth: true
-            MevaCoinComponents.Label {
-                fontSize: 28
-                text: qsTr("Governance Explorer") + translationManager.emptyString
-                color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+            spacing: 8
+            RowLayout {
+                Layout.fillWidth: true
+                MevaCoinComponents.Label {
+                    fontSize: mobileMode ? 20 : 28
+                    text: qsTr("Governance Explorer") + translationManager.emptyString
+                    color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+                MevaCoinComponents.StandardButton {
+                    text: qsTr("Refresh") + translationManager.emptyString
+                    onClicked: refresh()
+                    small: true
+                    Layout.alignment: Qt.AlignRight
+                }
             }
-            Item { Layout.fillWidth: true }
-            MevaCoinComponents.StandardButton {
-                text: qsTr("Refresh") + translationManager.emptyString
-                onClicked: refresh()
-                small: true
+            MevaCoinComponents.TextPlain {
+                font.pixelSize: 13
+                text: qsTr("Real-time view of MevaTrust governance: pool distributions, block activity, and chain data.") + translationManager.emptyString
+                color: MevaCoinComponents.Style.blackTheme ? "#AAAAAA" : "#555555"
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
             }
-        }
-        MevaCoinComponents.TextPlain {
-            font.pixelSize: 13
-            text: qsTr("Real-time view of MevaTrust governance: pool distributions, block activity, and chain data.") + translationManager.emptyString
-            color: MevaCoinComponents.Style.blackTheme ? "#AAAAAA" : "#555555"
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
+            MevaCoinComponents.TextPlain {
+                visible: connectionError !== ""
+                text: qsTr("⚠ Connection issue: ") + connectionError + translationManager.emptyString
+                font.pixelSize: 11
+                color: "#FF6B6B"
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
         }
 
         // ── Summary Cards Row ──
         GridLayout {
-            columns: 4
+            columns: mobileMode ? 2 : 4
             columnSpacing: 12
-            rowSpacing: 0
+            rowSpacing: mobileMode ? 12 : 0
             Layout.fillWidth: true
 
             // Pool Balance
@@ -151,13 +256,15 @@ Rectangle {
                     }
                     Item { height: 4; width: 1 }
                     MevaCoinComponents.TextPlain {
-                        text: qsTr("400,000 MVC") + translationManager.emptyString
+                        text: formatMVC(treasuryStatus.balance)
                         font.pixelSize: 26
                         font.bold: true
                         color: MevaCoinComponents.Style.blackTheme ? "#88CCFF" : "#2A6B9E"
                     }
                     MevaCoinComponents.TextPlain {
-                        text: qsTr("2-of-3 governance signers") + translationManager.emptyString
+                        text: treasuryStatus.signer_count !== undefined
+                              ? treasuryStatus.signer_count + qsTr("-of-") + treasuryStatus.threshold + qsTr(" governance signers")
+                              : qsTr("2-of-3 governance signers")
                         font.pixelSize: 11
                         color: "#888888"
                     }
@@ -185,13 +292,15 @@ Rectangle {
                     }
                     Item { height: 4; width: 1 }
                     MevaCoinComponents.TextPlain {
-                        text: qsTr("400,000 MVC") + translationManager.emptyString
+                        text: formatMVC(netFundStatus.balance)
                         font.pixelSize: 26
                         font.bold: true
                         color: MevaCoinComponents.Style.blackTheme ? "#88DDA8" : "#2E8B57"
                     }
                     MevaCoinComponents.TextPlain {
-                        text: qsTr("10k MVC / 30 day limit") + translationManager.emptyString
+                        text: netFundStatus.window_total !== undefined
+                              ? qsTr("Spent: ") + formatMVC(netFundStatus.window_total)
+                              : qsTr("10k MVC / 30 day limit")
                         font.pixelSize: 11
                         color: "#888888"
                     }
@@ -238,16 +347,18 @@ Rectangle {
         // ── Distribution Countdown ──
         Rectangle {
             Layout.fillWidth: true
-            height: 80
+            height: mobileMode ? 180 : 80
             radius: 12
             color: MevaCoinComponents.Style.blackTheme ? "#1E2A3A" : "#EBF4FF"
             border.width: 1
             border.color: MevaCoinComponents.Style.blackTheme ? "#2A3A4A" : "#CCDDFF"
 
-            RowLayout {
+            GridLayout {
                 anchors.fill: parent
                 anchors.margins: 20
-                spacing: 24
+                columns: mobileMode ? 1 : 3
+                columnSpacing: 24
+                rowSpacing: 12
 
                 ColumnLayout {
                     spacing: 2
@@ -280,11 +391,10 @@ Rectangle {
                     }
                 }
 
-                Item { Layout.fillWidth: true }
-
                 ColumnLayout {
                     spacing: 2
                     Layout.alignment: Qt.AlignVCenter
+                    Layout.fillWidth: true
 
                     MevaCoinComponents.TextPlain {
                         text: qsTr("Current Epoch") + translationManager.emptyString
@@ -328,8 +438,6 @@ Rectangle {
                     }
                 }
 
-                Item { Layout.fillWidth: true }
-
                 ColumnLayout {
                     spacing: 2
                     Layout.alignment: Qt.AlignVCenter
@@ -371,7 +479,8 @@ Rectangle {
             property var tabs: [
                 qsTr("Distributions"),
                 qsTr("Recent Blocks"),
-                qsTr("Governance Activity")
+                qsTr("Governance Activity"),
+                qsTr("Net Fund Spends")
             ]
 
             ColumnLayout {
@@ -393,14 +502,16 @@ Rectangle {
                             model: parent.parent.tabs
                             delegate: Rectangle {
                                 height: 44
-                                width: 160
+                                Layout.fillWidth: true
                                 color: "transparent"
 
                                 MevaCoinComponents.TextPlain {
                                     anchors.centerIn: parent
                                     text: modelData + translationManager.emptyString
-                                    font.pixelSize: 13
+                                    font.pixelSize: mobileMode ? 11 : 13
                                     font.bold: parent.parent.parent.currentTab === index
+                                    elide: Text.ElideRight
+                                    horizontalAlignment: Text.AlignHCenter
                                     color: parent.parent.parent.currentTab === index
                                            ? MevaCoinComponents.Style.orange
                                            : (MevaCoinComponents.Style.blackTheme ? "#AAAAAA" : "#555555")
@@ -558,29 +669,113 @@ Rectangle {
                         }
                     }
 
-                    // Tab 2: Governance Activity (placeholder until backend RPC)
-                    ColumnLayout {
+                    // Tab 2: Governance Activity
+                    ListView {
                         visible: parent.parent.currentTab === 2
                         anchors.fill: parent
-                        anchors.margins: 20
-                        spacing: 12
+                        anchors.margins: 8
+                        clip: true
+                        model: govActivity
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 44
+                            color: index % 2 === 0 ? "transparent" : (MevaCoinComponents.Style.blackTheme ? "#252535" : "#F0F0F2")
+                            radius: 6
 
-                        MevaCoinComponents.TextPlain {
-                            text: qsTr("Governance Activity") + translationManager.emptyString
-                            font.pixelSize: 16
-                            font.bold: true
-                            Layout.alignment: Qt.AlignHCenter
-                            color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 16
+                                anchors.rightMargin: 16
+                                spacing: 8
+
+                                MevaCoinComponents.TextPlain {
+                                    text: modelData.height ? modelData.height.toLocaleString() : "—"
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                                    Layout.preferredWidth: 70
+                                }
+                                Rectangle {
+                                    width: 12
+                                    height: 12
+                                    radius: 6
+                                    color: tagColor(modelData.tag)
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                                MevaCoinComponents.TextPlain {
+                                    text: tagLabel(modelData.tag)
+                                    font.pixelSize: 12
+                                    color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                                    Layout.preferredWidth: 120
+                                }
+                                MevaCoinComponents.TextPlain {
+                                    text: modelData.amount ? formatMVC(modelData.amount) : ""
+                                    font.pixelSize: 12
+                                    color: MevaCoinComponents.Style.orange
+                                    Layout.preferredWidth: 80
+                                }
+                                MevaCoinComponents.TextPlain {
+                                    text: modelData.recipient ? modelData.recipient.substring(0, 8) + "..." : ""
+                                    font.pixelSize: 11
+                                    font.family: "monospace"
+                                    color: "#888888"
+                                    Layout.preferredWidth: 70
+                                }
+                                Item { Layout.fillWidth: true }
+                                MevaCoinComponents.TextPlain {
+                                    text: timeAgo(modelData.timestamp)
+                                    font.pixelSize: 11
+                                    color: "#888888"
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                            }
                         }
-                        MevaCoinComponents.TextPlain {
-                            text: qsTr("Governance tx history RPC coming soon. This tab will display treasury spends, network fund transfers, and signer changes from the blockchain.") + translationManager.emptyString
-                            font.pixelSize: 13
-                            color: "#888888"
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignHCenter
+                    }
+
+                    // Tab 3: Net Fund Spends
+                    ListView {
+                        visible: parent.parent.currentTab === 3
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        clip: true
+                        model: netFundStatus.recent_spends || []
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 36
+                            color: index % 2 === 0 ? "transparent" : (MevaCoinComponents.Style.blackTheme ? "#252535" : "#F0F0F2")
+                            radius: 4
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 16
+                                anchors.rightMargin: 16
+                                spacing: 8
+
+                                MevaCoinComponents.TextPlain {
+                                    text: qsTr("Block #") + (modelData.height ? modelData.height.toLocaleString() : "—")
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                    color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                                    Layout.preferredWidth: 100
+                                }
+                                MevaCoinComponents.TextPlain {
+                                    text: modelData.amount ? formatMVC(modelData.amount) : "—"
+                                    font.pixelSize: 12
+                                    color: MevaCoinComponents.Style.orange
+                                    Layout.preferredWidth: 100
+                                }
+                                Item { Layout.fillWidth: true }
+                                MevaCoinComponents.TextPlain {
+                                    text: qsTr("Network Fund Spend")
+                                    font.pixelSize: 11
+                                    color: "#888888"
+                                }
+                            }
                         }
-                        Item { Layout.fillHeight: true }
                     }
                 }
             }
@@ -589,62 +784,292 @@ Rectangle {
         // ── Proposer Set Section ──
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 56
+            Layout.preferredHeight: proposerStatus.has_proposer_keys ? 80 : (proposerStatus.status ? 72 : 72)
             radius: 12
             color: MevaCoinComponents.Style.blackTheme ? "#1E1E2E" : "#F8F8FA"
             border.width: 1
             border.color: MevaCoinComponents.Style.blackTheme ? "#2E2E3E" : "#E0E0E0"
 
-            RowLayout {
+            ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 16
-                spacing: 16
+                spacing: 8
 
-                MevaCoinComponents.TextPlain {
-                    text: qsTr("Proposer Set") + translationManager.emptyString
-                    font.pixelSize: 13
-                    font.bold: true
-                    color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: mobileMode ? 8 : 16
+
+                    MevaCoinComponents.TextPlain {
+                        text: qsTr("Proposer Set") + translationManager.emptyString
+                        font.pixelSize: 13
+                        font.bold: true
+                        color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                    }
+
+                    Repeater {
+                        model: proposerStatus.proposers || []
+                        delegate: Rectangle {
+                            width: mobileMode ? 60 : 80
+                            height: 28
+                            radius: 14
+                            color: modelData.is_me ? "#4CAF50" : (modelData.active ? "#888888" : (MevaCoinComponents.Style.blackTheme ? "#444444" : "#DDDDDD"))
+
+                            MevaCoinComponents.TextPlain {
+                                anchors.centerIn: parent
+                                text: "P" + (modelData.index + 1) + (modelData.is_me ? qsTr(" ★") : "")
+                                font.pixelSize: 11
+                                font.bold: true
+                                color: modelData.is_me ? "white" : (MevaCoinComponents.Style.blackTheme ? "#CCCCCC" : "#555555")
+                            }
+
+                            MevaCoinComponents.Tooltip {
+                                text: modelData.is_me ? qsTr("This node (active)") : (modelData.active ? qsTr("Active") : qsTr("Standby"))
+                                visible: parent.containsMouse
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    MevaCoinComponents.TextPlain {
+                        text: proposerStatus.threshold !== undefined
+                              ? qsTr("Threshold: ") + proposerStatus.threshold + qsTr(" of ") + (proposerStatus.proposers ? proposerStatus.proposers.length : "?")
+                              : qsTr("Threshold: 3 of 5")
+                        font.pixelSize: 12
+                        color: "#888888"
+                    }
                 }
 
-                Repeater {
-                    model: ["P1", "P2", "P3", "P4", "P5"]
-                    delegate: Rectangle {
-                        width: 80
-                        height: 28
-                        radius: 14
-                        color: {
-                            if (index < 3) return "#4CAF50";
-                            return MevaCoinComponents.Style.blackTheme ? "#444444" : "#DDDDDD";
-                        }
+                // Placeholder when no proposers
+                MevaCoinComponents.TextPlain {
+                    visible: (!proposerStatus.proposers || proposerStatus.proposers.length === 0) && proposerStatus.status !== undefined
+                    text: qsTr("No proposer data available. Ensure the daemon has proposer keys configured.") + translationManager.emptyString
+                    font.pixelSize: 11
+                    color: "#888888"
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+                }
+
+                // Node pubkey row
+                MevaCoinComponents.TextPlain {
+                    visible: nodePubkey !== ""
+                    text: qsTr("Node Pubkey: ") + nodePubkey
+                    font.pixelSize: 10
+                    font.family: "monospace"
+                    color: "#888888"
+                    elide: Text.ElideMiddle
+                    Layout.fillWidth: true
+                }
+            }
+        }
+
+        // ── Circle Proposals Section ──
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 240
+            radius: 12
+            color: MevaCoinComponents.Style.blackTheme ? "#1E1E2E" : "#F8F8FA"
+            border.width: 1
+            border.color: MevaCoinComponents.Style.blackTheme ? "#2E2E3E" : "#E0E0E0"
+            clip: true
+
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: 0
+
+                // Header
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 44
+                    color: "transparent"
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 16
+                        spacing: 12
 
                         MevaCoinComponents.TextPlain {
-                            anchors.centerIn: parent
-                            text: modelData + (index < 3 ? qsTr(" ✓") : "")
-                            font.pixelSize: 11
+                            text: qsTr("Circle Proposals") + translationManager.emptyString
+                            font.pixelSize: 14
                             font.bold: true
-                            color: index < 3 ? "white" : (MevaCoinComponents.Style.blackTheme ? "#888888" : "#555555")
+                            color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
                         }
-
-                        MevaCoinComponents.Tooltip {
-                            text: index < 3 ? qsTr("Active — threshold met") : qsTr("Standby")
-                            visible: parent.containsMouse
+                        Item { Layout.fillWidth: true }
+                        MevaCoinComponents.LineEdit {
+                            id: circleIdInput
+                            placeholderText: qsTr("Circle ID (hex)") + translationManager.emptyString
+                            Layout.preferredWidth: mobileMode ? 120 : 260
+                            Layout.preferredHeight: 28
+                            fontSize: 11
                         }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
+                        MevaCoinComponents.StandardButton {
+                            text: qsTr("Load") + translationManager.emptyString
+                            onClicked: {
+                                if (circleIdInput.text.length > 0) {
+                                    mevatrustManager.circleProposalList(circleIdInput.text);
+                                }
+                            }
+                            small: true
                         }
                     }
                 }
 
-                Item { Layout.fillWidth: true }
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: MevaCoinComponents.Style.blackTheme ? "#333344" : "#DDDDDD"
+                }
+
+                // Proposal list
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    anchors.margins: 8
+                    clip: true
+                    model: proposalList
+                    delegate: Rectangle {
+                        width: ListView.view.width
+                        height: 36
+                        color: index % 2 === 0 ? "transparent" : (MevaCoinComponents.Style.blackTheme ? "#252535" : "#F0F0F2")
+                        radius: 4
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 8
+
+                            MevaCoinComponents.TextPlain {
+                                text: modelData.proposal_id ? modelData.proposal_id.substring(0, 8) + "..." : "—"
+                                font.pixelSize: 11
+                                font.family: "monospace"
+                                color: "#888888"
+                                Layout.preferredWidth: 70
+                            }
+                            MevaCoinComponents.TextPlain {
+                                text: modelData.target_pk ? modelData.target_pk.substring(0, 8) + "..." : "—"
+                                font.pixelSize: 11
+                                color: MevaCoinComponents.Style.blackTheme ? "white" : "black"
+                                Layout.preferredWidth: 70
+                            }
+                            MevaCoinComponents.TextPlain {
+                                text: modelData.yes_count + "/" + modelData.no_count
+                                font.pixelSize: 11
+                                color: modelData.yes_count > modelData.no_count ? "#4CAF50" : "#FF6B6B"
+                                Layout.preferredWidth: 40
+                            }
+                            MevaCoinComponents.TextPlain {
+                                text: proposalStatusLabel(modelData.status)
+                                font.pixelSize: 11
+                                color: "#888888"
+                                Layout.preferredWidth: 60
+                            }
+                            Item { Layout.fillWidth: true }
+                            MevaCoinComponents.TextPlain {
+                                text: qsTr("Block #") + (modelData.created_height ? modelData.created_height.toLocaleString() : "—")
+                                font.pixelSize: 11
+                                color: "#888888"
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                selectedProposalId = modelData.proposal_id;
+                                mevatrustManager.circleProposalVotes(selectedProposalId);
+                            }
+                        }
+                    }
+
+                    // Placeholder when no proposals loaded
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: proposalList.length === 0
+                        color: "transparent"
+
+                        MevaCoinComponents.TextPlain {
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.leftMargin: 20
+                            anchors.rightMargin: 20
+                            text: proposalList.length === 0
+                                  ? qsTr("Enter a Circle ID (hex) above and click Load to view proposals.") + translationManager.emptyString
+                                  : ""
+                            font.pixelSize: 12
+                            color: "#888888"
+                            wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Circle Proposal Votes Dialog ──
+        MevaCoinComponents.StandardDialog {
+            id: votesDialog
+            title: qsTr("Proposal Votes") + translationManager.emptyString
+            height: 300
+            onAccepted: close()
+            onRejected: close()
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 20
+                spacing: 10
 
                 MevaCoinComponents.TextPlain {
-                    text: qsTr("Threshold: 3 of 5") + translationManager.emptyString
-                    font.pixelSize: 12
+                    text: qsTr("Proposal: ") + selectedProposalId
+                    font.pixelSize: 11
+                    font.family: "monospace"
                     color: "#888888"
+                    elide: Text.ElideMiddle
+                    Layout.fillWidth: true
+                }
+
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: proposalVotes
+                    delegate: Rectangle {
+                        width: ListView.view.width
+                        height: 32
+                        color: "transparent"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            spacing: 8
+
+                            MevaCoinComponents.TextPlain {
+                                text: modelData.voter_pk ? modelData.voter_pk.substring(0, 12) + "..." : "—"
+                                font.pixelSize: 11
+                                font.family: "monospace"
+                                color: "#888888"
+                            }
+                            MevaCoinComponents.TextPlain {
+                                text: modelData.vote_yes ? qsTr("YES") : qsTr("NO")
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: modelData.vote_yes ? "#4CAF50" : "#FF6B6B"
+                            }
+                            Item { Layout.fillWidth: true }
+                            MevaCoinComponents.TextPlain {
+                                text: qsTr("Block #") + (modelData.height ? modelData.height.toLocaleString() : "—")
+                                font.pixelSize: 11
+                                color: "#888888"
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -36,6 +36,8 @@
 #include <QMutex>
 #include <QList>
 #include <QJSValue>
+#include <QMap>
+#include <QVariant>
 #include <QtConcurrent/QtConcurrent>
 
 #include "wallet/api/wallet2_api.h" // we need to have an access to the Monero::Wallet::Status enum here;
@@ -193,6 +195,10 @@ public:
     Q_INVOKABLE quint64 unlockedBalance() const;
     Q_INVOKABLE quint64 unlockedBalance(quint32 accountIndex) const;
     Q_INVOKABLE quint64 unlockedBalanceAll() const;
+
+    //! returns balance broken down by fund category (QML friendly: map of category -> {balance, unlockedBalance, numOutputs})
+    Q_INVOKABLE QVariantMap balanceByCategory();
+    Q_INVOKABLE QVariantMap balanceByCategory(quint32 accountIndex);
 
     //! account/address management
     quint32 currentSubaddressAccount() const;

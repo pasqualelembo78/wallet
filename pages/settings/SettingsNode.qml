@@ -562,7 +562,7 @@ Rectangle{
                 }
             }
 
-            MevaCoinComponents.LineEditMulti {
+            MevaCoinComponents.LineEdit {
                 id: daemonPassword
                 Layout.fillWidth: true
                 labelFontSize: 14
@@ -571,8 +571,7 @@ Rectangle{
                 placeholderText: qsTr("(optional)") + translationManager.emptyString
                 placeholderFontSize: 15
                 text: persistentSettings.daemonPassword
-                addressValidation: false
-                echoMode: TextInput.Password
+                password: true
                 onEditingFinished: {
                     persistentSettings.daemonPassword = daemonPassword.text;
                 }

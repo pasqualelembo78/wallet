@@ -87,7 +87,6 @@ ColumnLayout {
     property bool showingHeader: labelText != "" || copyButton || pasteButton
     property var wrapMode: Text.NoWrap
     property alias addressValidation: input.addressValidation
-    property alias echoMode: input.echoMode
     property string backgroundColor: "" // mock
 
     signal labelButtonClicked();

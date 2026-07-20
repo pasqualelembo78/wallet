@@ -352,9 +352,8 @@ bool Wallet::connectToDaemon()
     return m_walletImpl->connectToDaemon();
 }
 
-void Wallet::allowMismatchedDaemonVersion(bool allow)
+void Wallet::allowMismatchedDaemonVersion(bool /*allow*/)
 {
-    m_walletImpl->allowMismatchedDaemonVersion(allow);
 }
 
 void Wallet::setTrustedDaemon(bool arg)
@@ -385,6 +384,26 @@ quint64 Wallet::balanceAll() const
 quint64 Wallet::unlockedBalance() const
 {
     return unlockedBalance(m_currentSubaddressAccount);
+}
+
+QVariantMap Wallet::balanceByCategory()
+{
+    return balanceByCategory(m_currentSubaddressAccount);
+}
+
+QVariantMap Wallet::balanceByCategory(quint32 accountIndex)
+{
+    QVariantMap result;
+    auto cat_map = m_walletImpl->balanceByCategory(accountIndex);
+    for (const auto& [cat, info] : cat_map)
+    {
+        QVariantMap entry;
+        entry["balance"] = static_cast<quint64>(info.balance);
+        entry["unlockedBalance"] = static_cast<quint64>(info.unlockedBalance);
+        entry["numOutputs"] = static_cast<quint64>(info.numOutputs);
+        result[QString::number(cat)] = entry;
+    }
+    return result;
 }
 
 quint64 Wallet::unlockedBalance(quint32 accountIndex) const

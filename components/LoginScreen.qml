@@ -90,7 +90,7 @@ Item {
                     : (MevaCoinComponents.Style.blackTheme ? "#3a3a4e" : "#d0d0d0")
                 border.width: usernameField.activeFocus ? 2 : 1
 
-                TextInput {
+                TextField {
                     id: usernameField
                     anchors.fill: parent
                     anchors.leftMargin: 12
@@ -116,7 +116,7 @@ Item {
                     : (MevaCoinComponents.Style.blackTheme ? "#3a3a4e" : "#d0d0d0")
                 border.width: passwordField.activeFocus ? 2 : 1
 
-                TextInput {
+                TextField {
                     id: passwordField
                     anchors.fill: parent
                     anchors.leftMargin: 12
@@ -144,7 +144,7 @@ Item {
                 border.width: confirmField.activeFocus ? 2 : 1
                 visible: isSetup
 
-                TextInput {
+                TextField {
                     id: confirmField
                     anchors.fill: parent
                     anchors.leftMargin: 12

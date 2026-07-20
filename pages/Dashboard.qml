@@ -11,7 +11,7 @@ import "../components" as MevaCoinComponents
 // Dashboard.qml — Schermata iniziale dell'app (Qt 5.15 compatible)
 //
 // Mostra saldo, bottoni Send/Receive, scorciatoie e link legali
-// richiesti da Google Play (Privacy Policy, About, Open Source).
+// richiesti da Google Play (Privacy Policy, Terms of Service, About, Open Source).
 // Navigazione via appWindow.mobileNavigate() già esistente nel main.qml.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -74,6 +74,99 @@ Rectangle {
                     font.family: MevaCoinComponents.Style.fontRegular.name
                     font.pixelSize: 13
                     color: MevaCoinComponents.Style.dimmedFontColor
+                }
+            }
+        }
+
+        // ── Breakdown per categoria ──
+        Rectangle {
+            visible: typeof appWindow !== "undefined" && appWindow.currentWallet && appWindow.currentWallet.balance() > 0
+            Layout.fillWidth: true
+            Layout.preferredHeight: 120
+            radius: 12
+            color: MevaCoinComponents.Style.blackTheme ? "#1a1a2a" : "#f5f5ff"
+            border.color: MevaCoinComponents.Style.blackTheme ? "#2a2a3a" : "#ddddef"
+            border.width: 1
+
+            property var catData: visible ? appWindow.currentWallet.balanceByCategory() : ({})
+            function fmt(amt) {
+                if (!amt || amt === 0) return "0";
+                return (amt / 1e12).toFixed(4);
+            }
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 4
+
+                MevaCoinComponents.TextPlain {
+                    text: qsTr("Balance Breakdown") + translationManager.emptyString
+                    font.pixelSize: 11
+                    color: "#888888"
+                }
+
+                GridLayout {
+                    columns: 3
+                    columnSpacing: 8
+                    rowSpacing: 2
+                    Layout.fillWidth: true
+
+                    // Normal
+                    MevaCoinComponents.TextPlain {
+                        text: qsTr("Normal:") + translationManager.emptyString
+                        font.pixelSize: 11; color: "#888888"
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["0"] ? parent.parent.parent.catData["0"].balance : 0)
+                        font.pixelSize: 11; font.bold: true
+                        color: MevaCoinComponents.Style.defaultFontColor
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["0"] ? parent.parent.parent.catData["0"].unlockedBalance : 0) + " unlocked"
+                        font.pixelSize: 10; color: "#888888"
+                    }
+
+                    // Governance
+                    MevaCoinComponents.TextPlain {
+                        text: qsTr("Governance:") + translationManager.emptyString
+                        font.pixelSize: 11; color: "#88CCFF"
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["1"] ? parent.parent.parent.catData["1"].balance : 0)
+                        font.pixelSize: 11; font.bold: true; color: "#88CCFF"
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["1"] ? parent.parent.parent.catData["1"].unlockedBalance : 0) + " unlocked"
+                        font.pixelSize: 10; color: "#888888"
+                    }
+
+                    // Network Fund
+                    MevaCoinComponents.TextPlain {
+                        text: qsTr("Network Fund:") + translationManager.emptyString
+                        font.pixelSize: 11; color: "#88DDA8"
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["2"] ? parent.parent.parent.catData["2"].balance : 0)
+                        font.pixelSize: 11; font.bold: true; color: "#88DDA8"
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["2"] ? parent.parent.parent.catData["2"].unlockedBalance : 0) + " unlocked"
+                        font.pixelSize: 10; color: "#888888"
+                    }
+
+                    // Mining Rewards
+                    MevaCoinComponents.TextPlain {
+                        text: qsTr("Mining Rewards:") + translationManager.emptyString
+                        font.pixelSize: 11; color: "#FFD700"
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["3"] ? parent.parent.parent.catData["3"].balance : 0)
+                        font.pixelSize: 11; font.bold: true; color: "#FFD700"
+                    }
+                    MevaCoinComponents.TextPlain {
+                        text: fmt(parent.parent.parent.catData["3"] ? parent.parent.parent.catData["3"].unlockedBalance : 0) + " unlocked"
+                        font.pixelSize: 10; color: "#888888"
+                    }
                 }
             }
         }
@@ -278,6 +371,38 @@ Rectangle {
                 Text { text: "\u203A"; font.pixelSize: 20; color: MevaCoinComponents.Style.dimmedFontColor; anchors.verticalCenter: parent.verticalCenter }
             }
             MouseArea { id: ppMA; anchors.fill: parent; onClicked: Qt.openUrlExternally(dashboardPage.privacyPolicyUrl) }
+        }
+
+        // Terms of Service
+        Rectangle {
+            Layout.fillWidth: true
+            height: 48
+            radius: 10
+            color: tosMA.pressed
+                ? (MevaCoinComponents.Style.blackTheme ? "#222222" : "#e8e8e8")
+                : (MevaCoinComponents.Style.blackTheme ? "#1a1a1a" : "#f5f5f5")
+            border.color: MevaCoinComponents.Style.blackTheme ? "#2a2a2a" : "#e0e0e0"
+            border.width: 1
+            Behavior on color { ColorAnimation { duration: 80 } }
+
+            Row {
+                anchors.fill: parent
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                spacing: 12
+
+                Text { text: "\u2696"; font.pixelSize: 18; anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                    text: qsTr("Terms of Service") + translationManager.emptyString
+                    font.family: MevaCoinComponents.Style.fontRegular.name
+                    font.pixelSize: 14
+                    color: MevaCoinComponents.Style.defaultFontColor
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 60
+                }
+                Text { text: "\u203A"; font.pixelSize: 20; color: MevaCoinComponents.Style.dimmedFontColor; anchors.verticalCenter: parent.verticalCenter }
+            }
+            MouseArea { id: tosMA; anchors.fill: parent; onClicked: appWindow.middlePanel.state = "Terms" }
         }
 
         // About MevaCoin

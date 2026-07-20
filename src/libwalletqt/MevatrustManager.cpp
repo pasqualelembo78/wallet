@@ -118,10 +118,10 @@ void MevatrustManager::rpcCallInternal(const QString &method, const QJsonObject 
             return;
         }
         QJsonObject result = obj["result"].toObject();
-        if (result["status"].toString() == "error") {
-            QString errMsg = result["message"].toString();
-            emit rpcResponseReceived(method, QString::fromUtf8(rawData), errMsg, elapsed);
-            emit errorOccurred(errMsg);
+        QString status = result["status"].toString();
+        if (status != "OK" && !status.isEmpty()) {
+            emit rpcResponseReceived(method, QString::fromUtf8(rawData), status, elapsed);
+            emit errorOccurred(status);
             return;
         }
         emit rpcResponseReceived(method, QString::fromUtf8(rawData), "", elapsed);
@@ -434,5 +434,61 @@ void MevatrustManager::getRecentBlocks(quint32 count)
     params["count"] = (qint32)count;
     rpcCall("get_recent_blocks", params, [this](const QJsonObject &result) {
         emit recentBlocksReceived(result);
+    });
+}
+
+void MevatrustManager::getTreasuryStatus()
+{
+    rpcCall("get_treasury_status", QJsonObject(), [this](const QJsonObject &result) {
+        emit treasuryStatusReceived(result);
+    });
+}
+
+void MevatrustManager::getNetworkFundStatus()
+{
+    rpcCall("get_network_fund_status", QJsonObject(), [this](const QJsonObject &result) {
+        emit networkFundStatusReceived(result);
+    });
+}
+
+void MevatrustManager::getGovernanceActivity(quint64 fromHeight, quint32 count)
+{
+    QJsonObject params;
+    params["from_height"] = (qint64)fromHeight;
+    params["count"] = (qint32)count;
+    rpcCall("get_governance_activity", params, [this](const QJsonObject &result) {
+        emit governanceActivityReceived(result);
+    });
+}
+
+void MevatrustManager::getProposerStatus()
+{
+    rpcCall("get_proposer_status", QJsonObject(), [this](const QJsonObject &result) {
+        emit proposerStatusReceived(result);
+    });
+}
+
+void MevatrustManager::getNodePubkey()
+{
+    rpcCall("get_node_pubkey", QJsonObject(), [this](const QJsonObject &result) {
+        emit nodePubkeyReceived(result);
+    });
+}
+
+void MevatrustManager::circleProposalList(const QString &circleId)
+{
+    QJsonObject params;
+    params["circle_id"] = circleId;
+    rpcCall("circle_proposal_list", params, [this](const QJsonObject &result) {
+        emit circleProposalListReceived(result);
+    });
+}
+
+void MevatrustManager::circleProposalVotes(const QString &proposalId)
+{
+    QJsonObject params;
+    params["proposal_id"] = proposalId;
+    rpcCall("circle_proposal_votes", params, [this](const QJsonObject &result) {
+        emit circleProposalVotesReceived(result);
     });
 }

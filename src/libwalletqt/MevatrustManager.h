@@ -65,6 +65,13 @@ public:
     // ── Governance Dashboard RPC methods ──────────────────────────────────
     Q_INVOKABLE void getPoolDistributionHistory(quint32 limit = 50);
     Q_INVOKABLE void getRecentBlocks(quint32 count = 10);
+    Q_INVOKABLE void getTreasuryStatus();
+    Q_INVOKABLE void getNetworkFundStatus();
+    Q_INVOKABLE void getGovernanceActivity(quint64 fromHeight = 0, quint32 count = 100);
+    Q_INVOKABLE void getProposerStatus();
+    Q_INVOKABLE void getNodePubkey();
+    Q_INVOKABLE void circleProposalList(const QString &circleId);
+    Q_INVOKABLE void circleProposalVotes(const QString &proposalId);
 
 signals:
     void daemonAddressChanged();
@@ -108,6 +115,13 @@ signals:
     // Governance Dashboard signals
     void poolDistributionHistoryReceived(const QJsonObject &result);
     void recentBlocksReceived(const QJsonObject &result);
+    void treasuryStatusReceived(const QJsonObject &result);
+    void networkFundStatusReceived(const QJsonObject &result);
+    void governanceActivityReceived(const QJsonObject &result);
+    void proposerStatusReceived(const QJsonObject &result);
+    void nodePubkeyReceived(const QJsonObject &result);
+    void circleProposalListReceived(const QJsonObject &result);
+    void circleProposalVotesReceived(const QJsonObject &result);
 
 private:
     void rpcCall(const QString &method, const QJsonObject &params,

@@ -343,28 +343,27 @@ quint64 WalletManager::blockchainTargetHeight() const
 
 double WalletManager::miningHashRate() const
 {
-    return 0.0; // mining disabled
+    return m_pimpl->miningHashRate();
 }
 
 bool WalletManager::isMining() const
 {
-    return false; // mining disabled
+    return m_pimpl->isMining();
 }
 
 void WalletManager::miningStatusAsync()
 {
-    emit miningStatus(false); // mining disabled
+    emit miningStatus(m_pimpl->isMining());
 }
 
 bool WalletManager::startMining(const QString &address, quint32 threads, bool backgroundMining, bool ignoreBattery)
 {
-    Q_UNUSED(address); Q_UNUSED(threads); Q_UNUSED(backgroundMining); Q_UNUSED(ignoreBattery);
-    return false; // mining disabled
+    return m_pimpl->startMining(address.toStdString(), threads, backgroundMining, ignoreBattery);
 }
 
 bool WalletManager::stopMining()
 {
-    return false; // mining disabled
+    return m_pimpl->stopMining();
 }
 
 bool WalletManager::localDaemonSynced() const

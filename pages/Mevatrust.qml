@@ -61,6 +61,8 @@ Rectangle {
             fontSize: 14
             color: MevaCoinComponents.Style.defaultFontColor
             opacity: 0.7
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
         }
 
         Item { height: 8; width: 1 }
@@ -74,48 +76,56 @@ Rectangle {
             border.color: Qt.rgba(0,0.5,1,0.2)
             border.width: 1
 
-            RowLayout {
+            ColumnLayout {
                 id: nodeConnLayout
                 anchors.fill: parent; anchors.margins: 8; spacing: 8
 
-                MevaCoinComponents.Label {
-                    text: qsTr("Node:") + translationManager.emptyString
-                    fontSize: 12; opacity: 0.7
-                }
-                MevaCoinComponents.LineEdit {
-                    id: preferredNodeAddr
-                    Layout.preferredWidth: 220
+                Flow {
                     Layout.fillWidth: true
-                    placeholderText: qsTr("host:port (e.g. 82.165.218.56:18081)") + translationManager.emptyString
-                    text: mevatrustManager.daemonAddress
-                    fontSize: 12
-                }
-                MevaCoinComponents.LineEdit {
-                    id: preferredNodeUser
-                    Layout.preferredWidth: 100
-                    placeholderText: qsTr("Username") + translationManager.emptyString
-                    fontSize: 12
-                }
-                MevaCoinComponents.LineEdit {
-                    id: preferredNodePass
-                    Layout.preferredWidth: 100
-                    placeholderText: qsTr("Password") + translationManager.emptyString
-                    password: true
-                    fontSize: 12
-                }
-                MevaCoinComponents.StandardButton {
-                    text: qsTr("Connect") + translationManager.emptyString
-                    primary: true; small: true
-                    enabled: preferredNodeAddr.text.trim().length > 0
-                    onClicked: {
-                        var addr = preferredNodeAddr.text.trim();
-                        if (addr.indexOf("://") === -1)
-                            addr = "http://" + addr;
-                        mevatrustManager.daemonAddress = addr;
-                        mevatrustManager.daemonUsername = preferredNodeUser.text.trim();
-                        mevatrustManager.daemonPassword = preferredNodePass.text.trim();
-                        appWindow.showStatusMessage(qsTr("Connected to ") + addr, 3);
-                        refreshMyNode();
+                    spacing: 8
+
+                    MevaCoinComponents.Label {
+                        text: qsTr("Node:") + translationManager.emptyString
+                        fontSize: 12; opacity: 0.7
+                        Layout.alignment: Qt.AlignVCenter
+                    }
+                    MevaCoinComponents.LineEdit {
+                        id: preferredNodeAddr
+                        Layout.preferredWidth: mobileMode ? 180 : 220
+                        Layout.minimumWidth: 140
+                        placeholderText: qsTr("host:port (e.g. 82.165.218.56:18081)") + translationManager.emptyString
+                        text: mevatrustManager.daemonAddress
+                        fontSize: 12
+                    }
+                    MevaCoinComponents.LineEdit {
+                        id: preferredNodeUser
+                        Layout.preferredWidth: mobileMode ? 80 : 100
+                        Layout.minimumWidth: 60
+                        placeholderText: qsTr("Username") + translationManager.emptyString
+                        fontSize: 12
+                    }
+                    MevaCoinComponents.LineEdit {
+                        id: preferredNodePass
+                        Layout.preferredWidth: mobileMode ? 80 : 100
+                        Layout.minimumWidth: 60
+                        placeholderText: qsTr("Password") + translationManager.emptyString
+                        password: true
+                        fontSize: 12
+                    }
+                    MevaCoinComponents.StandardButton {
+                        text: qsTr("Connect") + translationManager.emptyString
+                        primary: true; small: true
+                        enabled: preferredNodeAddr.text.trim().length > 0
+                        onClicked: {
+                            var addr = preferredNodeAddr.text.trim();
+                            if (addr.indexOf("://") === -1)
+                                addr = "http://" + addr;
+                            mevatrustManager.daemonAddress = addr;
+                            mevatrustManager.daemonUsername = preferredNodeUser.text.trim();
+                            mevatrustManager.daemonPassword = preferredNodePass.text.trim();
+                            appWindow.showStatusMessage(qsTr("Connected to ") + addr, 3);
+                            refreshMyNode();
+                        }
                     }
                 }
             }
@@ -130,26 +140,32 @@ Rectangle {
             MevaCoinComponents.StandardButton {
                 text: (myNodeId.length >= 64 ? qsTr("My Node") : qsTr("My Node")) + translationManager.emptyString
                 primary: myNodeId.length >= 64
+                small: mobileMode
                 onClicked: myNodeSheet.open()
             }
             MevaCoinComponents.StandardButton {
                 text: qsTr("Node Lookup") + translationManager.emptyString
+                small: mobileMode
                 onClicked: lookupNodeDialog.open()
             }
             MevaCoinComponents.StandardButton {
                 text: qsTr("Network Stats") + translationManager.emptyString
+                small: mobileMode
                 onClicked: networkStatsSheet.open()
             }
             MevaCoinComponents.StandardButton {
                 text: qsTr("Badge Gallery") + translationManager.emptyString
+                small: mobileMode
                 onClicked: badgeGallerySheet.open()
             }
             MevaCoinComponents.StandardButton {
                 text: qsTr("Top Nodes") + translationManager.emptyString
+                small: mobileMode
                 onClicked: topNodesSheet.open()
             }
             MevaCoinComponents.StandardButton {
                 text: qsTr("Stores") + translationManager.emptyString
+                small: mobileMode
                 onClicked: storeManagerDialog.open()
             }
         }
@@ -224,24 +240,27 @@ Rectangle {
                     }
                 }
 
-                RowLayout {
+                Flow {
                     Layout.fillWidth: true; spacing: 8
-                    Item { Layout.fillWidth: true }
+                    Item { Layout.fillWidth: true; height: 1 }
                     MevaCoinComponents.StandardButton {
                         text: qsTr("Register") + translationManager.emptyString
-                        primary: true
+                        primary: true; small: mobileMode
                         onClicked: registerNodeDialog.open()
                     }
                     MevaCoinComponents.StandardButton {
                         text: qsTr("Deregister") + translationManager.emptyString
+                        small: mobileMode
                         onClicked: deregisterConfirmDialog.open()
                     }
                     MevaCoinComponents.StandardButton {
                         text: qsTr("Circles") + translationManager.emptyString
+                        small: mobileMode
                         onClicked: circleManagerDialog.open()
                     }
                     MevaCoinComponents.StandardButton {
                         text: qsTr("Badge Progress") + translationManager.emptyString
+                        small: mobileMode
                         onClicked: badgeProgressSheet.open()
                     }
                 }
@@ -2567,6 +2586,7 @@ Rectangle {
         // Wallet tx result
         onErrorOccurred: {
             console.log("Mevatrust error:", error);
+            appWindow.showStatusMessage(qsTr("MevaTrust: ") + error, 5);
         }
     }
 
