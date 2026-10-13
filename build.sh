@@ -93,6 +93,11 @@ echo ""
 
 echo ">>> Step 3: Build + firma APK..."
 mkdir -p .gradle-cache
+# Disabilita auto-download SDK di Gradle: platform-tools manca e le repo
+# dl.google.com/android/repository/repository2-*.xml vanno in timeout -> build appesa.
+if ! grep -q 'android.builder.sdkDownload' .gradle-cache/gradle.properties 2>/dev/null; then
+    echo 'android.builder.sdkDownload=false' >> .gradle-cache/gradle.properties
+fi
 docker run --rm -i \
     -v "$(pwd):/mevacoin-gui" \
     -v "$(pwd)/.gradle-cache:/root/.gradle" \
