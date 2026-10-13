@@ -36,7 +36,7 @@ public:
     Q_INVOKABLE void getNodeRewards(const QString &nodeId);
     Q_INVOKABLE void getRewardHistory(const QString &nodeId, quint64 limit = 50);
     Q_INVOKABLE void getTopNodes(quint32 count = 20);
-    Q_INVOKABLE void getBadgeRequirements();
+    Q_INVOKABLE void getBadgeRequirements(const QString &nodeId = QString());
     Q_INVOKABLE void getNodeIncentiveHistory(const QString &nodeId, quint64 limit = 50, quint64 offset = 0);
     // Write RPC methods
     Q_INVOKABLE void registerNode(const QString &publicKey, const QString &signature, const QString &address,

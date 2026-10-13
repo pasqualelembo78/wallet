@@ -41,6 +41,7 @@ Rectangle {
         mevatrustManager.getNodeRewards(myNodeId);
         mevatrustManager.getPenaltyHistory(myNodeId);
         mevatrustManager.getNodeIncentiveHistory(myNodeId, 5);
+        mevatrustManager.getBadgeRequirements(myNodeId);
     }
 
     ColumnLayout {
@@ -2384,7 +2385,7 @@ Rectangle {
         // Badge requirements
         onBadgeRequirementsReceived: {
             badgeGalleryRepeater.model.clear();
-            var badgeList = (badges && badges.badges) || [];
+            var badgeList = (requirements && requirements.badges) || [];
             for (var i = 0; i < badgeList.length; i++) {
                 var b = badgeList[i];
                 badgeGalleryRepeater.model.append({

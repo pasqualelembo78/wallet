@@ -81,6 +81,9 @@ qrc_*.cpp
 # ────────────────────────────────────────────────────────────
 *.log
 build_log.txt
+m2build.log
+pkg_log*.txt
+rebuild_log*.txt
 *.tmp
 *.temp
 *.swp
@@ -89,6 +92,10 @@ build_log.txt
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Cache di build locali (Docker / Gradle / Maven)
+.gradle-cache/
+.local-m2/
 
 
 # ────────────────────────────────────────────────────────────

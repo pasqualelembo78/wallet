@@ -26,6 +26,8 @@
         <file>pages/Privacy.qml</file>
         <file>pages/Mevatrust.qml</file>
         <file>pages/GovernanceExplorer.qml</file>
+        <file>pages/Mining.qml</file>
+        <file>pages/Terms.qml</file>
         <file>pages/Advanced.qml</file>
         <file>pages/Transfer.qml</file>
         <file>pages/History.qml</file>

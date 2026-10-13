@@ -98,7 +98,7 @@ Rectangle {
             isLoading = false;
         }
         onNetworkStatsReceived: {
-            poolStats = result;
+            poolStats = stats;
         }
         onPoolDistributionHistoryReceived: {
             if (result && result.entries) {

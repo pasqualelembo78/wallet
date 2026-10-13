@@ -92,8 +92,10 @@ docker build --tag mevacoin:build-env-android \
 echo ""
 
 echo ">>> Step 3: Build + firma APK..."
+mkdir -p .gradle-cache
 docker run --rm -i \
     -v "$(pwd):/mevacoin-gui" \
+    -v "$(pwd)/.gradle-cache:/root/.gradle" \
     -e THREADS=${THREADS} \
     -e KEYSTORE_PASS="${KEYSTORE_PASS}" \
     mevacoin:build-env-android sh -ex << 'DOCKER_EOF'
@@ -166,6 +168,24 @@ make -j${THREADS} -C src
 
 echo ">>> Fase A: make apk..."
 make -j${THREADS} apk
+
+# ── Mirror Maven per dl.google.com (spesso read-timeout con JVM) ──
+python3 << 'MIRROR_EOF'
+path = '/mevacoin-gui/build/Android/release/android-build/build.gradle'
+with open(path) as f:
+    content = f.read()
+MIRROR = "        maven { url 'https://maven.aliyun.com/repository/google' }\n        maven { url 'https://maven.aliyun.com/repository/central' }\n"
+if 'maven.aliyun.com' not in content:
+    content = content.replace("    repositories {\n        google()\n        jcenter()\n    }",
+                              "    repositories {\n" + MIRROR + "        google()\n        jcenter()\n    }", 1)
+    content = content.replace("repositories {\n    google()\n    jcenter()\n}",
+                              "repositories {\n" + "    " + MIRROR + "    google()\n    jcenter()\n}")
+    with open(path, 'w') as f:
+        f.write(content)
+    print('  OK: build.gradle mirror Aliyun aggiunto')
+else:
+    print('  OK: build.gradle mirror già presente')
+MIRROR_EOF
 
 ABUILD=/mevacoin-gui/build/Android/release/android-build
 ASRC=/mevacoin-gui/android

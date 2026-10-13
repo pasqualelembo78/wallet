@@ -209,10 +209,10 @@ void MevatrustManager::getTopNodes(quint32 count)
     });
 }
 
-void MevatrustManager::getBadgeRequirements()
+void MevatrustManager::getBadgeRequirements(const QString &nodeId)
 {
     QJsonObject params;
-    params["node_id"] = "";
+    params["node_id"] = nodeId.isEmpty() ? "" : nodeId;
     rpcCall("get_badge_requirements", params, [this](const QJsonObject &result) {
         emit badgeRequirementsReceived(result);
     });
